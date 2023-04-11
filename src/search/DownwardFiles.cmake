@@ -555,6 +555,14 @@ fast_downward_plugin(
 )
 
 fast_downward_plugin(
+	NAME SYMBOLIC_HM_HEURISTIC
+    HELP "The symbolic h^m heuristic"
+    SOURCES
+        heuristics/symbolic_hm
+    DEPENDS TASK_PROPERTIES
+)
+
+fast_downward_plugin(
     NAME LANDMARK_CUT_HEURISTIC
     HELP "The LM-cut heuristic"
     SOURCES
