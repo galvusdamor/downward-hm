@@ -1,4 +1,5 @@
 #include "symbolic_hm.h"
+#include "transition_relation.h"
 
 #include "../plugins/plugin.h"
 
@@ -14,7 +15,13 @@ SymbolicHMHeuristic::SymbolicHMHeuristic(const plugins::Options &opts)
     : Heuristic(opts),
       m(opts.get<int>("m")) {
 	assert(m == 1); // We can for now only handle m=1
-	  
+
+	vars = make_shared<symbolic::SymVariables>(opts, task_proxy);
+	vars->init();
+
+	symbolic::TransitionRelation tr_test (vars,OperatorID(1),task_proxy);
+
+
 	if (log.is_at_least_normal()) {
         log << "Using symbolic h^" << m << "." << endl;
     }
