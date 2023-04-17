@@ -1,1 +1,7 @@
-python3 fast-downward.py ../classical-domains/classical/blocks/probBLOCKS-4-0.pddl --search "astar(symb_hm())"
+./build.py && ./fast-downward.py classical-domains/classical/blocks/probBLOCKS-4-0.pddl --search "astar(symb_hm())"
+
+
+
+links:
+https://add-lib.scce.info/assets/doxygen-cudd-documentation/cudd_8h.html
+https://www.cs.uleth.ca/~rice/cudd_docs/

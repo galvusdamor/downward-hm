@@ -36,6 +36,18 @@ void SymVariables::init() {
     init(var_order);
 }
 
+void write_dd (DdNode *dd, char* filename, DdManager *manager)
+{
+    FILE *outfile; // output file pointer for .dot file
+    outfile = fopen(filename,"w");
+    DdNode **ddnodearray = (DdNode**)malloc(sizeof(DdNode*)); // initialize the function array
+    ddnodearray[0] = dd;
+    Cudd_DumpDot(manager, 1, ddnodearray, NULL, NULL, outfile); // dump the function to .dot file
+    free(ddnodearray);
+    fclose (outfile); // close the file */
+}
+
+
 // Constructor that makes use of global variables to initialize the
 // symbolic_search structures
 
@@ -104,6 +116,8 @@ void SymVariables::init(const vector<int> &v_order) {
             createBiimplicationBDD(bdd_index_pre[var], bdd_index_eff[var]);
     }
 
+    write_dd(validBDD.getNode(), "validBDD.dot", manager->getManager());
+    
     utils::g_log << "Symbolic Variables... Done." << endl;
 }
 
