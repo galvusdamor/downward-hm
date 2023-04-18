@@ -31,9 +31,9 @@ class SymbolicHMBDDs {
     const long cudd_init_cache_size;     // Initial cache size
     const long cudd_init_available_memory; // Maximum available memory (bytes)
 
-    Cudd *manager; // manager associated with this symbolic search
+    DdManager *manager; // manager associated with this symbolic search
 
-    BDD current_state;   // BDDs associated with the precondition of a predicate
+    DdNode *current_state;   // BDDs associated with the precondition of a predicate
 
 
 

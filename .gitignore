@@ -9,3 +9,4 @@ __pycache__/
 /misc/autodoc/downward-xmlrpc.secret
 /autom4te.cache
 /classical-domains
+settings.json

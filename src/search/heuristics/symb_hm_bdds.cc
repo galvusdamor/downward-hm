@@ -1,7 +1,8 @@
 #include "symb_hm_bdds.h"
 
 #include "../plugins/options.h"
-
+#include <cmath>
+#include <cstdio>
 
 
 using namespace std;
@@ -38,17 +39,54 @@ void SymbolicHMBDDs::init() {
     }
 
     // create cudd manager with variable size (max_preconditions+1) * ceil(log2(facts))
-    
-    // create a BDD to represent the current state
-    current_state = manager->bddOne();
+    manager = Cudd_Init(num_fd_vars * (max_preconditions + 1) * ceil(log2(num_facts)), 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
 
-    // set the BDD values to the current true facts
+
+    // create a BDD to represent the current state
+    DdNode *var = NULL;
+    DdNode *first_var = NULL;
     for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
-        int var = task_proxy.get_variables()[i].get_id();
-        int val = task_proxy.get_variables()[i].get_fact(task_proxy.get_variables()[i].get_domain_size() - 1).get_value();
-        int index = var * num_facts + val;
-        current_state = current_state * manager->bddVar(index);
+        int varValue = task_proxy.get_variables()[i].get_id();
+        for (size_t j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
+            int factValue = task_proxy.get_variables()[i].get_fact(j).get_value();
+            cout << "  " << task_proxy.get_variables()[i].get_name() << "=" << factValue << endl;
+            if (j == 0 && i == 0) {
+                first_var = Cudd_bddNewVar(manager);
+                continue;
+            }
+            if (var == NULL) {
+                var = Cudd_bddNewVar(manager);
+                if (factValue == varValue) {
+                    current_state = Cudd_bddAnd(manager, first_var, var);
+                } else {
+                    current_state = Cudd_bddAnd(manager, first_var, Cudd_Not(var));
+                }
+            } else {
+                var = Cudd_bddNewVar(manager);
+                if (factValue == varValue) {
+                    current_state = Cudd_bddAnd(manager, current_state, var);
+                } else {
+                    current_state = Cudd_bddAnd(manager, current_state, Cudd_Not(var));
+                }
+            }
+        }
     }
+
+    // to dot file
+    FILE *fp = fopen("current_state.dot", "w");
+    Cudd_DumpDot(manager, 1, &current_state, NULL, NULL, fp);
+    fclose(fp);
+
+
+
+
+    // // set the BDD values to the current true facts
+    // for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
+    //     int var = task_proxy.get_variables()[i].get_id();
+    //     int val = task_proxy.get_variables()[i].get_fact(task_proxy.get_variables()[i].get_domain_size() - 1).get_value();
+    //     int index = var * num_facts + val;
+    //     current_state = current_state * manager->bddVar(index);
+    // }
 
     return;
     
