@@ -1,5 +1,5 @@
 #include "symbolic_hm.h"
-#include "transition_relation.h"
+#include "symb_hm_bdds.h"
 
 #include "../plugins/plugin.h"
 
@@ -33,18 +33,9 @@ SymbolicHMHeuristic::SymbolicHMHeuristic(const plugins::Options &opts)
     int num_operators = task_proxy.get_operators().size();
 
 
-	vars = make_shared<symbolic::SymVariables>(opts, task_proxy);
-	vars->init();
+    bdds = make_shared<symbolic::SymbolicHMBDDs>(opts, task_proxy);
 
-	symbolic::TransitionRelation tr_test (vars,OperatorID(1),task_proxy);
-
-    // print preconditions BDD
-    cout << "Preconditions BDD:" << endl;
-    for (VariableProxy var : task_proxy.get_variables()) {
-        for (int value = 0; value < var.get_domain_size(); value++) {
-            cout << "  " << var.get_name() << "=" << value << ": " << vars->preBDD(var.get_id(), value) << endl;
-        }
-    }
+    bdds->init();
 
     //vars to dot file
     
@@ -84,7 +75,7 @@ SymbolicHMHeuristic::SymbolicHMHeuristic(const plugins::Options &opts)
         // check if preconditions are true
         bool applicable = true;
         for (FactPair pre : preconditions) {
-            if (!state[pre.var].get_value() == pre.value) {
+            if ((!state[pre.var].get_value()) == pre.value) {
                 applicable = false;
                 break;
             }
