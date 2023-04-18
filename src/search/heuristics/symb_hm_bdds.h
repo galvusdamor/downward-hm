@@ -1,11 +1,14 @@
-#pragma once
+#ifndef SYMBOLIC_SYM_VARIABLES_H
+#define SYMBOLIC_SYM_VARIABLES_H
 
 
 #include "../task_proxy.h"
 #include "../tasks/root_task.h"
 #include "../plugins/options.h"
 #include <cuddObj.hh>
-extern void exceptionError(std::string message);
+
+
+class GlobalState;
 
 
 namespace options {
@@ -15,6 +18,10 @@ class OptionParser;
 
 
 namespace symbolic {
+
+struct BDDError {};
+extern void exceptionError(std::string message);
+
 
 class SymbolicHMBDDs {
     // Use task_proxy to access task information.
@@ -39,3 +46,6 @@ public:
 };
 
 }
+
+
+#endif

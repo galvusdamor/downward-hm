@@ -559,8 +559,7 @@ fast_downward_plugin(
     HELP "The symbolic h^m heuristic"
     SOURCES
         heuristics/symbolic_hm
-        heuristics/sym_variables
-        heuristics/transition_relation
+        heuristics/symb_hm_bdds
     DEPENDS TASK_PROPERTIES
 )
 

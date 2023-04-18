@@ -1,5 +1,6 @@
 #include "symb_hm_bdds.h"
 
+#include "../plugins/options.h"
 
 
 
@@ -8,6 +9,10 @@ using plugins::Options;
 
 namespace symbolic {
 
+void exceptionError(string /*message*/) {
+    // utils::g_log << message << endl;
+    throw BDDError();
+}
 
 SymbolicHMBDDs::SymbolicHMBDDs(const Options &opts,
                            const TaskProxy &task)
@@ -32,8 +37,7 @@ void SymbolicHMBDDs::init() {
         }
     }
 
-    // create cudd manager
-    manager = new Cudd(cudd_init_nodes, cudd_init_cache_size, cudd_init_available_memory);
+    // create cudd manager with variable size (max_preconditions+1) * ceil(log2(facts))
     
     // create a BDD to represent the current state
     current_state = manager->bddOne();
