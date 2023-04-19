@@ -33,7 +33,11 @@ class SymbolicHMBDDs {
 
     Cudd *manager; // manager associated with this symbolic search
 
-    DdNode *current_state;   // BDDs associated with the precondition of a predicate
+    BDD current_state;   // BDDs associated with the precondition of a predicate
+
+
+    int num_facts;
+    int num_fact_bits;
 
 
 
@@ -42,6 +46,10 @@ public:
                  const TaskProxy &task);
 
     void init();
+
+    void current_state_to_dot(const std::string &filename);
+    void to_dot(const std::string &filename, BDD bdd);
+    BDD fact_to_bdd(int fact);
 
 };
 

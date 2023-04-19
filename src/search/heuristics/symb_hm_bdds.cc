@@ -22,13 +22,15 @@ SymbolicHMBDDs::SymbolicHMBDDs(const Options &opts,
       cudd_init_available_memory(0L) {}
 
 void SymbolicHMBDDs::init() {
-    // get the number of variables
-    int num_fd_vars = task_proxy.get_variables().size();
     // get the number of facts
-    int num_facts = 0;
+    num_facts = 0;
     for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
         num_facts += task_proxy.get_variables()[i].get_domain_size();
     }
+
+    // get the number of fact bits
+    num_fact_bits = ceil(log2(num_facts));
+
     // get the max amount of preconditions
     int max_preconditions = 0;
     for (size_t i = 0; i < task_proxy.get_operators().size(); ++i) {
@@ -39,76 +41,78 @@ void SymbolicHMBDDs::init() {
     }
 
     // create cudd manager with variable size (max_preconditions+1) * ceil(log2(facts))
-    manager = new Cudd(num_fd_vars * (max_preconditions + 1) * ceil(log2(num_facts)), 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
+    manager = new Cudd(num_facts * (max_preconditions + 1) * ceil(log2(num_facts)), 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
 
 
-	cout << num_fd_vars * (max_preconditions + 1) * ceil(log2(num_facts)) << endl;
+    // // create a BDD to represent the current state
+    // BDD state = manager->bddOne();
+	// int varNum = 0;
+	// for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
+    //     int varValue = task_proxy.get_initial_state()[i].get_value(); //   get_variables()[i].get_id();
+    //     int bddVariableNumber = varNum + varValue;
+	// 	state = state * manager->bddVar(bddVariableNumber);
+	// 	for (size_t j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
+	// 		if (j != varValue)
+	// 			state = state * ! manager->bddVar(varNum + j);
 
-    // create a BDD to represent the current state
-    BDD state = manager->bddOne();
-	int varNum = 0;
-	for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
-        int varValue = task_proxy.get_initial_state()[i].get_value(); //   get_variables()[i].get_id();
-        int bddVariableNumber = varNum + varValue;
-		state = state * manager->bddVar(bddVariableNumber);
-		for (size_t j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
-			if (j != varValue)
-				state = state * ! manager->bddVar(varNum + j);
+	// 	}
 
-		}
+	// 	varNum += task_proxy.get_variables()[i].get_domain_size();
 
-		varNum += task_proxy.get_variables()[i].get_domain_size();
-		
-		//for (size_t j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
-        //    int factValue = task_proxy.get_variables()[i].get_fact(j).get_value();
-        //    cout << "  " << task_proxy.get_variables()[i].get_name() << "=" << factValue << endl;
-        //    if (j == 0 && i == 0) {
-        //        first_var = Cudd_bddNewVar(manager);
-        //        continue;
-        //    }
-        //    if (var == NULL) {
-        //        var = Cudd_bddNewVar(manager);
-        //        if (factValue == varValue) {
-        //            current_state = Cudd_bddAnd(manager, first_var, var);
-        //        } else {
-        //            current_state = Cudd_bddAnd(manager, first_var, Cudd_Not(var));
-        //        }
-        //    } else {
-        //        var = Cudd_bddNewVar(manager);
-        //        if (factValue == varValue) {
-        //            current_state = Cudd_bddAnd(manager, current_state, var);
-        //        } else {
-        //            current_state = Cudd_bddAnd(manager, current_state, Cudd_Not(var));
-        //        }
-        //    }
-
-
-    		FILE *fp = fopen((string("current_state") + to_string(i) + string("=") + to_string(varValue) + string(".dot")).c_str(), "w");
-    		DdNode **ddnodearray = (DdNode **)malloc(sizeof(state.Add().getNode()));
-			   ddnodearray[0] = state.Add().getNode();
-		Cudd_DumpDot(manager->getManager(), 1, ddnodearray, NULL, NULL, fp);
-    		fclose(fp);
-        //}
-    }
-
-    // to dot file
-    //FILE *fp = fopen("current_state.dot", "w");
-    //Cudd_DumpDot(manager, 1, &current_state, NULL, NULL, fp);
-    //fclose(fp);
-
-
-
-
-    // // set the BDD values to the current true facts
-    // for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
-    //     int var = task_proxy.get_variables()[i].get_id();
-    //     int val = task_proxy.get_variables()[i].get_fact(task_proxy.get_variables()[i].get_domain_size() - 1).get_value();
-    //     int index = var * num_facts + val;
-    //     current_state = current_state * manager->bddVar(index);
     // }
 
-    return;
-    
+    // create current state BDD
+    current_state = manager->bddZero();
+    int fact = 0;
+    State state = task_proxy.get_initial_state();
+    for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
+        int varValue = state[i].get_value();
+        for (size_t j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
+            if (j == varValue) {
+                current_state += fact_to_bdd(fact);
+                to_dot("asdfadsf.dot", fact_to_bdd(fact));
+                cout << "fact: " << fact << endl;
+            }
+            fact++;
+        }
+    }
+    current_state_to_dot("current_state.dot");
 
+
+
+    return;
 }
+
+void SymbolicHMBDDs::current_state_to_dot(const std::string &filename) {
+    ADD add = current_state.Add();
+    FILE *fp = fopen(filename.c_str(), "w");
+    DdNode **ddnodearray = (DdNode **)malloc(sizeof(add.getNode()));
+	ddnodearray[0] = add.getNode();
+	Cudd_DumpDot(manager->getManager(), 1, ddnodearray, NULL, NULL, fp);
+    free(ddnodearray);
+    fclose(fp);
+}
+
+void SymbolicHMBDDs::to_dot(const std::string &filename, BDD bdd) {
+    ADD add = bdd.Add();
+    FILE *fp = fopen(filename.c_str(), "w");
+    DdNode **ddnodearray = (DdNode **)malloc(sizeof(add.getNode()));
+    ddnodearray[0] = add.getNode();
+    Cudd_DumpDot(manager->getManager(), 1, ddnodearray, NULL, NULL, fp);
+    free(ddnodearray);
+    fclose(fp);
+}
+
+BDD SymbolicHMBDDs::fact_to_bdd(int fact) {
+    BDD bdd = manager->bddOne();
+    for (int i = 0; i < num_fact_bits; ++i) {
+        if (fact & (1 << i)) {
+            bdd *= manager->bddVar(i);
+        } else {
+            bdd *= !manager->bddVar(i);
+        }
+    }
+    return bdd;
+}
+
 }
