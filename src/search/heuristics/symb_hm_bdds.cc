@@ -39,43 +39,62 @@ void SymbolicHMBDDs::init() {
     }
 
     // create cudd manager with variable size (max_preconditions+1) * ceil(log2(facts))
-    manager = Cudd_Init(num_fd_vars * (max_preconditions + 1) * ceil(log2(num_facts)), 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
+    manager = new Cudd(num_fd_vars * (max_preconditions + 1) * ceil(log2(num_facts)), 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
 
+
+	cout << num_fd_vars * (max_preconditions + 1) * ceil(log2(num_facts)) << endl;
 
     // create a BDD to represent the current state
-    DdNode *var = NULL;
-    DdNode *first_var = NULL;
-    for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
-        int varValue = task_proxy.get_variables()[i].get_id();
-        for (size_t j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
-            int factValue = task_proxy.get_variables()[i].get_fact(j).get_value();
-            cout << "  " << task_proxy.get_variables()[i].get_name() << "=" << factValue << endl;
-            if (j == 0 && i == 0) {
-                first_var = Cudd_bddNewVar(manager);
-                continue;
-            }
-            if (var == NULL) {
-                var = Cudd_bddNewVar(manager);
-                if (factValue == varValue) {
-                    current_state = Cudd_bddAnd(manager, first_var, var);
-                } else {
-                    current_state = Cudd_bddAnd(manager, first_var, Cudd_Not(var));
-                }
-            } else {
-                var = Cudd_bddNewVar(manager);
-                if (factValue == varValue) {
-                    current_state = Cudd_bddAnd(manager, current_state, var);
-                } else {
-                    current_state = Cudd_bddAnd(manager, current_state, Cudd_Not(var));
-                }
-            }
-        }
+    BDD state = manager->bddOne();
+	int varNum = 0;
+	for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
+        int varValue = task_proxy.get_initial_state()[i].get_value(); //   get_variables()[i].get_id();
+        int bddVariableNumber = varNum + varValue;
+		state = state * manager->bddVar(bddVariableNumber);
+		for (size_t j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
+			if (j != varValue)
+				state = state * ! manager->bddVar(varNum + j);
+
+		}
+
+		varNum += task_proxy.get_variables()[i].get_domain_size();
+		
+		//for (size_t j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
+        //    int factValue = task_proxy.get_variables()[i].get_fact(j).get_value();
+        //    cout << "  " << task_proxy.get_variables()[i].get_name() << "=" << factValue << endl;
+        //    if (j == 0 && i == 0) {
+        //        first_var = Cudd_bddNewVar(manager);
+        //        continue;
+        //    }
+        //    if (var == NULL) {
+        //        var = Cudd_bddNewVar(manager);
+        //        if (factValue == varValue) {
+        //            current_state = Cudd_bddAnd(manager, first_var, var);
+        //        } else {
+        //            current_state = Cudd_bddAnd(manager, first_var, Cudd_Not(var));
+        //        }
+        //    } else {
+        //        var = Cudd_bddNewVar(manager);
+        //        if (factValue == varValue) {
+        //            current_state = Cudd_bddAnd(manager, current_state, var);
+        //        } else {
+        //            current_state = Cudd_bddAnd(manager, current_state, Cudd_Not(var));
+        //        }
+        //    }
+
+
+    		FILE *fp = fopen((string("current_state") + to_string(i) + string("=") + to_string(varValue) + string(".dot")).c_str(), "w");
+    		DdNode **ddnodearray = (DdNode **)malloc(sizeof(state.Add().getNode()));
+			   ddnodearray[0] = state.Add().getNode();
+		Cudd_DumpDot(manager->getManager(), 1, ddnodearray, NULL, NULL, fp);
+    		fclose(fp);
+        //}
     }
 
     // to dot file
-    FILE *fp = fopen("current_state.dot", "w");
-    Cudd_DumpDot(manager, 1, &current_state, NULL, NULL, fp);
-    fclose(fp);
+    //FILE *fp = fopen("current_state.dot", "w");
+    //Cudd_DumpDot(manager, 1, &current_state, NULL, NULL, fp);
+    //fclose(fp);
 
 
 
