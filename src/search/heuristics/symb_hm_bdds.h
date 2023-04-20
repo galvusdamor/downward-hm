@@ -35,6 +35,8 @@ class SymbolicHMBDDs {
 
     BDD current_state;   // BDDs associated with the precondition of a predicate
 
+    int max_preconditions; // maximum number of preconditions in the task
+    int max_effects; // maximum number of effects in the task
 
     int num_facts;
     int num_fact_bits;
@@ -42,14 +44,15 @@ class SymbolicHMBDDs {
 
 
 public:
-    SymbolicHMBDDs(const plugins::Options &opts,
-                 const TaskProxy &task);
+    SymbolicHMBDDs(const TaskProxy &task);
 
     void init();
 
     void current_state_to_dot(const std::string &filename);
     void to_dot(const std::string &filename, BDD bdd);
-    BDD fact_to_bdd(int fact);
+    BDD fact_to_bdd(int fact, int copy);
+
+    int get_var_num(int bit, int copy);
 
 };
 

@@ -33,7 +33,7 @@ SymbolicHMHeuristic::SymbolicHMHeuristic(const plugins::Options &opts)
     int num_operators = task_proxy.get_operators().size();
 
 
-    bdds = make_shared<symbolic::SymbolicHMBDDs>(opts, task_proxy);
+    bdds = make_shared<symbolic::SymbolicHMBDDs>(task_proxy);
 
     bdds->init();
 
