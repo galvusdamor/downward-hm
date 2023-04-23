@@ -39,64 +39,26 @@ void SymbolicHMBDDs::init() {
         }
     }
 
-    // get the max amount of effects
-    max_effects = 0;
-    for (size_t i = 0; i < task_proxy.get_operators().size(); ++i) {
-        int num_effects = task_proxy.get_operators()[i].get_effects().size();
-        if (num_effects > max_effects) {
-            max_effects = num_effects;
-        }
-    }
     cout << "max preconditions: " << max_preconditions << endl;
-    cout << "max effects: " << max_effects << endl;
 
     // create cudd manager with variable size (max_preconditions+1) * ceil(log2(facts))
-    manager = new Cudd(num_facts * (max_preconditions + max_effects) * num_fact_bits, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
+    manager = new Cudd(num_facts * (max_preconditions + 1) * num_fact_bits, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
 
     // create current state BDD
-    current_state = manager->bddZero();
-    int fact = 0;
-    State state = task_proxy.get_initial_state();
-    for (int i = 0; i < task_proxy.get_variables().size(); ++i) {
-        int varValue = state[i].get_value();
-        for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
-            if (j == varValue) {
-                current_state += fact_to_bdd(fact, 0);
-            }
-            fact++;
-        }
-    }
-    current_state_to_dot("current_state.dot");
+    create_current_state_bdd(task_proxy.get_initial_state());
+
+    // create state copy BDD
+    create_state_copy_bdd(task_proxy.get_initial_state());
 
     // create BDDs for each operator
-    BDD preconditions = manager->bddZero();
-    for (OperatorProxy op : task_proxy.get_operators()) {
-        BDD precondition = manager->bddOne();
-        for (int i = 0; i < op.get_preconditions().size(); ++i) {
-            FactProxy fact = op.get_preconditions()[i];
-            int var = fact.get_variable().get_id();
-            int val = fact.get_value();
-            int fact_num = 0;
-            for (size_t k = 0; k < var; ++k) {
-                fact_num += task_proxy.get_variables()[k].get_domain_size();
-            }
-            fact_num += val;
-            precondition *= fact_to_bdd(fact_num, i);
-            if (i == 0) {
-                cout << "fact: " << fact_num << endl;
-            }
-        }
-        // combine all preconditions
-        preconditions += precondition;
-    }
-    to_dot("preconditions.dot", preconditions);
+    create_operators_bdd();
 
+    // conjunct the state copy with the operators
+    BDD bdd = state_copy & operators;
+    // to dot
+    to_dot("bdd.dot", bdd);
 
     return;
-}
-
-void SymbolicHMBDDs::current_state_to_dot(const std::string &filename) {
-    to_dot(filename, current_state);
 }
 
 void SymbolicHMBDDs::to_dot(const std::string &filename, BDD bdd) {
@@ -105,20 +67,18 @@ void SymbolicHMBDDs::to_dot(const std::string &filename, BDD bdd) {
     DdNode **ddnodearray = (DdNode **)malloc(sizeof(add.getNode()));
     ddnodearray[0] = add.getNode();
 
-    vector<string> var_names(num_fact_bits * (max_preconditions + max_effects));
+    vector<string> var_names(num_fact_bits * (max_preconditions + 1));
     for (int i = 0; i < num_fact_bits; ++i) {
         for (int j = 0; j < max_preconditions; ++j) {
             std::string name = "pre" + to_string(j) + "_bit" + to_string(i);
             var_names[get_var_num(i, j)] = name;
         }
-        for (int j = max_preconditions; j < (max_preconditions + max_effects); ++j) {
-            std::string name = "pre" + to_string(j) + "_bit" + to_string(i);
-            var_names[get_var_num(i, j)] = name;
-        }
+        std::string name = "eff_bit" + to_string(i);
+        var_names[get_var_num(i, max_preconditions)] = name;
     }
 
-    vector<char *> inames(num_fact_bits * (max_preconditions + max_effects));
-    for (int i = 0; i < num_fact_bits * (max_preconditions + max_effects); ++i) {
+    vector<char *> inames(num_fact_bits * (max_preconditions + 1));
+    for (int i = 0; i < num_fact_bits * (max_preconditions + 1); ++i) {
         inames[i] = &var_names[i].front();
     }
 
@@ -131,9 +91,9 @@ BDD SymbolicHMBDDs::fact_to_bdd(int fact, int copy) {
     BDD bdd = manager->bddOne();
     for (int i = 0; i < num_fact_bits; ++i) {
         if (fact & (1 << i)) {
-            bdd *= manager->bddVar(get_var_num(i, copy));
+            bdd *= manager->bddVar(get_var_num(num_fact_bits-i-1, copy));
         } else {
-            bdd *= !manager->bddVar(get_var_num(i, copy));
+            bdd *= !manager->bddVar(get_var_num(num_fact_bits-i-1, copy));
         }
     }
     return bdd;
@@ -143,5 +103,78 @@ int SymbolicHMBDDs::get_var_num(int bit, int copy) {
     return bit + (copy * num_fact_bits);
 }
 
+
+void SymbolicHMBDDs::create_current_state_bdd(State state) {
+    current_state = manager->bddOne();
+    int fact = 0;
+    for (int i = 0; i < task_proxy.get_variables().size(); ++i) {
+        int varValue = state[i].get_value();
+        for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
+            if (j == varValue) {
+                current_state += fact_to_bdd(fact, 0);
+            }
+            fact++;
+        }
+    }
+
+    to_dot("current_state.dot", current_state);
+}
+
+void SymbolicHMBDDs::create_state_copy_bdd(State state) {
+    state_copy = manager->bddZero();
+    int fact = 0;
+    for (int i = 0; i < task_proxy.get_variables().size(); ++i) {
+        int varValue = state[i].get_value();
+        for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
+            if (j == varValue) {
+                for (int k = 0; k < max_preconditions; ++k) {
+                    state_copy += fact_to_bdd(fact, k);
+                }
+            }
+            fact++;
+        }
+    }
+    //TODO can this be done with copying current_state?
+    //TODO why the negation?????
+    state_copy = !state_copy;
+
+    to_dot("state_copy.dot", state_copy);
+}
+
+void SymbolicHMBDDs::create_operators_bdd() {
+    operators = manager->bddZero();
+    for (size_t i = 0; i < task_proxy.get_operators().size(); ++i) {
+        OperatorProxy op = task_proxy.get_operators()[i];
+        BDD preconditionBDD = manager->bddOne();
+        for (size_t i = 0; i < op.get_preconditions().size(); ++i) {
+            FactProxy fact = op.get_preconditions()[i];
+            int var = fact.get_variable().get_id();
+            int val = fact.get_value();
+            int fact_num = 0;
+            for (size_t k = 0; k < var; ++k) {
+                fact_num += task_proxy.get_variables()[k].get_domain_size();
+            }
+            fact_num += val;
+            preconditionBDD *= fact_to_bdd(fact_num, i);
+        }
+        BDD effectBDD = manager->bddZero();
+        for (size_t i = 0; i < op.get_effects().size(); ++i) {
+            FactProxy fact = op.get_effects()[i].get_fact();
+            int var = fact.get_variable().get_id();
+            int val = fact.get_value();
+            int fact_num = 0;
+            for (size_t k = 0; k < var; ++k) {
+                fact_num += task_proxy.get_variables()[k].get_domain_size();
+            }
+            fact_num += val;
+            effectBDD += fact_to_bdd(fact_num, max_preconditions);
+        }
+
+        operators += preconditionBDD * effectBDD;
+    }
+
+    to_dot("operators.dot", operators);
+
+}
 
 }

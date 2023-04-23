@@ -33,10 +33,11 @@ class SymbolicHMBDDs {
 
     Cudd *manager; // manager associated with this symbolic search
 
-    BDD current_state;   // BDDs associated with the precondition of a predicate
+    BDD current_state;   // BDD for the current state
+    BDD state_copy;      // BDD for the state copy (current state copied into each copy)
+    BDD operators;   // BDD for the preconditions
 
     int max_preconditions; // maximum number of preconditions in the task
-    int max_effects; // maximum number of effects in the task
 
     int num_facts;
     int num_fact_bits;
@@ -48,9 +49,13 @@ public:
 
     void init();
 
-    void current_state_to_dot(const std::string &filename);
     void to_dot(const std::string &filename, BDD bdd);
     BDD fact_to_bdd(int fact, int copy);
+
+    void create_current_state_bdd(State state);
+    void create_state_copy_bdd(State state);
+    void create_operators_bdd();
+
 
     int get_var_num(int bit, int copy);
 
