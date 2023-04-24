@@ -53,10 +53,23 @@ void SymbolicHMBDDs::init() {
     // create BDDs for each operator
     create_operators_bdd();
 
+
+    BDD true_cube = manager->bddVar(max_preconditions * num_fact_bits);
+    for (int i = 0; i < max_preconditions * num_fact_bits; ++i) {
+        true_cube *= manager->bddVar(i);
+        // true_cube &= !manager->bddVar(i);
+    }
+
+    DdNode *eff = Cudd_bddAndAbstract(manager->getManager(), operators.getNode(), state_copy.getNode(), true_cube.getNode());
+    BDD effects = BDD(manager, eff);
+    
+
     // conjunct the state copy with the operators
-    BDD bdd = state_copy & operators;
+    // BDD bdd = operators * state_copy;
     // to dot
-    to_dot("bdd.dot", bdd);
+    to_dot("bdd.dot", eff);
+
+    // // get the effects of the operators with Cudd_bddExistAbstract
 
     return;
 }
