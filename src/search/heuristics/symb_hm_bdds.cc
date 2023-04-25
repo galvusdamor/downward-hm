@@ -57,17 +57,16 @@ void SymbolicHMBDDs::init() {
     BDD true_cube = manager->bddVar(max_preconditions * num_fact_bits);
     for (int i = 0; i < max_preconditions * num_fact_bits; ++i) {
         true_cube *= manager->bddVar(i);
-        // true_cube &= !manager->bddVar(i);
     }
 
     DdNode *eff = Cudd_bddAndAbstract(manager->getManager(), operators.getNode(), state_copy.getNode(), true_cube.getNode());
-    BDD effects = BDD(manager, eff);
+    BDD effects = BDD(*manager, eff);
     
 
     // conjunct the state copy with the operators
     // BDD bdd = operators * state_copy;
     // to dot
-    to_dot("bdd.dot", eff);
+    to_dot("bdd.dot", effects);
 
     // // get the effects of the operators with Cudd_bddExistAbstract
 
