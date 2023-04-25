@@ -73,6 +73,9 @@ void SymbolicHMBDDs::init() {
     return;
 }
 
+/**
+ * Creates a dot file for the given BDD.
+*/
 void SymbolicHMBDDs::to_dot(const std::string &filename, BDD bdd) {
     ADD add = bdd.Add();
     FILE *fp = fopen(filename.c_str(), "w");
@@ -99,6 +102,9 @@ void SymbolicHMBDDs::to_dot(const std::string &filename, BDD bdd) {
     fclose(fp);
 }
 
+/**
+ * Converts a fact to a BDD (by encoding the bits of the fact)
+*/
 BDD SymbolicHMBDDs::fact_to_bdd(int fact, int copy) {
     BDD bdd = manager->bddOne();
     for (int i = 0; i < num_fact_bits; ++i) {
@@ -115,7 +121,12 @@ int SymbolicHMBDDs::get_var_num(int bit, int copy) {
     return bit + (copy * num_fact_bits);
 }
 
-
+/**
+ * Creates the current_state BDD
+ * size: num_fact_bits
+ * use: It can be used to check if a fact is in the current state
+ * made: for each fact, create a BDD with the fact bit set to 1 and the rest to 0
+*/
 void SymbolicHMBDDs::create_current_state_bdd(State state) {
     current_state = manager->bddOne();
     int fact = 0;
@@ -132,6 +143,13 @@ void SymbolicHMBDDs::create_current_state_bdd(State state) {
     to_dot("current_state.dot", current_state);
 }
 
+/**
+ * Creates the state_copy BDD
+ * size: num_fact_bits * max_preconditions
+ * use: It can be conjuncted with the operators to get the operators that are applicable in the current state
+ * made: for each fact, create a BDD with the fact bit set to 1 and the rest to 0
+ *     and repeat this for each precondition
+*/
 void SymbolicHMBDDs::create_state_copy_bdd(State state) {
     state_copy = manager->bddZero();
     int fact = 0;
@@ -153,6 +171,14 @@ void SymbolicHMBDDs::create_state_copy_bdd(State state) {
     to_dot("state_copy.dot", state_copy);
 }
 
+/**
+ * Creates the operators BDD
+ * size: num_fact_bits * (max_preconditions + 1)
+ * use: It show all the operators in the problem, and the effects that they have
+ * made: for each precondition within an operator, create a BDD using the fact bits.
+ *    The effects are all encoded together in one part at the end.
+ *    Repeat this for each operator 
+*/
 void SymbolicHMBDDs::create_operators_bdd() {
     operators = manager->bddZero();
     for (size_t i = 0; i < task_proxy.get_operators().size(); ++i) {
