@@ -5,45 +5,65 @@ edge [dir = none];
 { node [shape = plaintext];
   edge [style = invis];
   "CONST NODES" [style = invis];
-" eff_bit1 " -> " eff_bit2 " -> " eff_bit3 " -> " eff_bit4 " -> "CONST NODES"; 
+" eff_bit0 " -> " eff_bit1 " -> " eff_bit2 " -> " eff_bit3 " -> " eff_bit4 " -> "CONST NODES"; 
 }
 { rank = same; node [shape = box]; edge [style = invis];
 "F0"; }
+{ rank = same; " eff_bit0 ";
+"0x4a86";
+}
 { rank = same; " eff_bit1 ";
-"0x7c55";
+"0x4a81";
+"0x4a85";
 }
 { rank = same; " eff_bit2 ";
-"0x7c51";
-"0x7c54";
+"0x4a80";
+"0x496a";
+"0x4988";
+"0x49bd";
 }
 { rank = same; " eff_bit3 ";
-"0x7ab1";
-"0x7a3b";
-"0x7a19";
+"0x48ff";
+"0x48ee";
+"0x4963";
+"0x4862";
 }
 { rank = same; " eff_bit4 ";
-"0x7a14";
+"0x4860";
+"0x4861";
 }
 { rank = same; "CONST NODES";
-{ node [shape = box]; "0x70fa";
-"0x70f9";
+{ node [shape = box]; "0x3ffa";
+"0x3ff9";
 }
 }
-"F0" -> "0x7c55" [style = solid];
-"0x7c55" -> "0x7c54";
-"0x7c55" -> "0x7c51" [style = dashed];
-"0x7c51" -> "0x7a3b";
-"0x7c51" -> "0x7a19" [style = dashed];
-"0x7c54" -> "0x7ab1";
-"0x7c54" -> "0x7a3b" [style = dashed];
-"0x7ab1" -> "0x70fa";
-"0x7ab1" -> "0x7a14" [style = dashed];
-"0x7a3b" -> "0x7a14";
-"0x7a3b" -> "0x70f9" [style = dashed];
-"0x7a19" -> "0x7a14";
-"0x7a19" -> "0x70fa" [style = dashed];
-"0x7a14" -> "0x70f9";
-"0x7a14" -> "0x70fa" [style = dashed];
-"0x70fa" [label = "0"];
-"0x70f9" [label = "1"];
+"F0" -> "0x4a86" [style = solid];
+"0x4a86" -> "0x4a85";
+"0x4a86" -> "0x4a81" [style = dashed];
+"0x4a81" -> "0x4a80";
+"0x4a81" -> "0x49bd" [style = dashed];
+"0x4a85" -> "0x496a";
+"0x4a85" -> "0x4988" [style = dashed];
+"0x4a80" -> "0x4862";
+"0x4a80" -> "0x4861" [style = dashed];
+"0x496a" -> "0x3ffa";
+"0x496a" -> "0x48ff" [style = dashed];
+"0x4988" -> "0x48ee";
+"0x4988" -> "0x3ffa" [style = dashed];
+"0x49bd" -> "0x4963";
+"0x49bd" -> "0x3ffa" [style = dashed];
+"0x48ff" -> "0x3ffa";
+"0x48ff" -> "0x4860" [style = dashed];
+"0x48ee" -> "0x3ffa";
+"0x48ee" -> "0x4861" [style = dashed];
+"0x4963" -> "0x4861";
+"0x4963" -> "0x3ffa" [style = dashed];
+"0x4862" -> "0x3ff9";
+"0x4862" -> "0x4861" [style = dashed];
+"0x4860" -> "0x3ff9";
+"0x4860" -> "0x3ffa" [style = dashed];
+"0x4861" -> "0x3ffa";
+"0x4861" -> "0x3ff9" [style = dashed];
+"0x3ffa" [label = "0"];
+"0x3ff9" [label = "1"];
 }

@@ -83,6 +83,11 @@ SymbolicHMHeuristic::SymbolicHMHeuristic(const plugins::Options &opts)
         if (applicable) {
             num_applicable_ops++;
         }
+        cout << "  " << op.get_name() << " is applicable: " << applicable << endl;
+        cout << "    amount effects: " << op.get_effects().size() << endl;
+
+
+
     }
     cout << "  There are " << num_applicable_ops << " applicable operators." << endl;
 
