@@ -3,6 +3,7 @@
 #include "../plugins/options.h"
 #include <cmath>
 #include <cstdio>
+#include "../utils/logging.h"
 
 
 using namespace std;
@@ -42,29 +43,61 @@ void SymbolicHMBDDs::init() {
     // create cudd manager with variable size (max_preconditions+1) * ceil(log2(facts))
     manager = new Cudd(num_facts * (max_preconditions + 1) * num_fact_bits, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
 
-    // create current state BDD
-    create_current_state_bdd(task_proxy.get_initial_state());
-
-    // create state copy BDD
-    create_state_copy_bdd(task_proxy.get_initial_state());
-
-    // create BDDs for each operator
-    create_operators_bdd();
-
-
-    BDD true_cube = manager->bddVar(max_preconditions * num_fact_bits - 1);
-    for (int i = 0; i < max_preconditions * num_fact_bits - 1; ++i) {
-        true_cube *= manager->bddVar(i);
+    // populate fact_bdd_vars
+    for (int i = 0; i < max_preconditions + 1; ++i) {
+        std::vector<BDD> fact_bdd_vars_copy;
+        for (int j = 0; j < num_fact_bits; ++j) {
+            fact_bdd_vars_copy.push_back(manager->bddVar(i * num_fact_bits + j));
+        }
+        fact_bdd_vars.push_back(fact_bdd_vars_copy);
     }
 
-    BDD effects = BDD(*manager, Cudd_bddAndAbstract(manager->getManager(), operators.getNode(), state_copy.getNode(), true_cube.getNode()));
-    BDD test = operators & state_copy;
+    create_goal_bdd();
 
-    // to dot
-    to_dot("bdd.dot", effects);
-    to_dot("bdd_test.dot", test);
+    // create pre_true_cube
+    pre_true_cube = manager->bddVar(max_preconditions * num_fact_bits - 1);
+    for (int i = 0; i < max_preconditions * num_fact_bits - 1; ++i) {
+        pre_true_cube *= manager->bddVar(i);
+    }
 
     return;
+}
+
+
+int SymbolicHMBDDs::calculate_heuristic(State state) {
+    // create current state BDD
+    create_current_state_bdd(state);
+    BDD previous_state = current_state;
+
+    int count = 0;
+    while (true) {
+        count++;
+        // create state copy BDD
+        create_state_copy_bdd();
+
+        // create BDDs for each operator
+        create_operators_bdd();
+
+        // get effects and append to current state
+        current_state += operators.AndAbstract(state_copy, pre_true_cube).SwapVariables(fact_bdd_vars[max_preconditions], fact_bdd_vars[0]);
+
+        // check if goal is reachable
+        if (goal <= current_state) {
+            cout << "reachable in " << count << endl;
+            return count;
+        }
+
+        // check if current state is equal to previous state
+        if (current_state == previous_state) {
+            cout << "not reachable" << endl;
+            return -1;
+        }
+
+        // set previous state to current state
+        previous_state = current_state;
+    }
+
+
 }
 
 /**
@@ -92,8 +125,8 @@ void SymbolicHMBDDs::to_dot(const std::string &filename, BDD bdd) {
     }
 
     Cudd_DumpDot(manager->getManager(), 1, ddnodearray, inames.data(), NULL, fp);
-    free(ddnodearray);
     fclose(fp);
+    free(ddnodearray);
 }
 
 /**
@@ -134,7 +167,7 @@ void SymbolicHMBDDs::create_current_state_bdd(State state) {
         }
     }
 
-    to_dot("current_state.dot", current_state);
+    // to_dot("current_state.dot", current_state);
 }
 
 /**
@@ -143,33 +176,33 @@ void SymbolicHMBDDs::create_current_state_bdd(State state) {
  * use: It can be conjuncted with the operators to get the operators that are applicable in the current state
  * made: copy the current state to all copies
 */
-void SymbolicHMBDDs::create_state_copy_bdd(State state) {
-    state_copy = manager->bddOne();
-    std::vector<BDD> copies(max_preconditions);
-    for (int i = 0; i < max_preconditions; ++i) {
-        copies[i] = manager->bddZero();
-    }
-    int fact = 0;
-    for (int i = 0; i < task_proxy.get_variables().size(); ++i) {
-        int varValue = state[i].get_value();
-        for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
-            if (j == varValue) {
-                for (int k = 0; k < max_preconditions; ++k) {
-                    copies[k] += fact_to_bdd(fact, k);
-                }
-            }
-            fact++;
-        }
-    }
-    for (int i = 0; i < max_preconditions; ++i) {
-        state_copy *= copies[i];
-    }
-    //TODO can this be done with copying current_state?
-    //TODO why the negation?????
-    // state_copy = !state_copy;
+void SymbolicHMBDDs::create_state_copy_bdd() {
 
-    to_dot("state_copy.dot", state_copy);
+    state_copy = manager->bddOne();
+    for (int i = 0; i < max_preconditions; ++i) {
+        state_copy *= current_state.SwapVariables(fact_bdd_vars[0], fact_bdd_vars[i]);
+    }
+
+    // to_dot("state_copy.dot", state_copy);
 }
+
+void SymbolicHMBDDs::create_goal_bdd() {
+    goal = manager->bddZero();
+    int fact = 0;
+    for (FactProxy fact : task_proxy.get_goals()) {
+        int var = fact.get_variable().get_id();
+        int val = fact.get_value();
+        int fact_num = 0;
+        for (int i = 0; i < var; ++i) {
+            fact_num += task_proxy.get_variables()[i].get_domain_size();
+        }
+        fact_num += val;
+        goal += fact_to_bdd(fact_num, 0);
+    }
+
+    // to_dot("goal.dot", goal);
+}
+
 
 /**
  * Creates the operators BDD
@@ -182,7 +215,6 @@ void SymbolicHMBDDs::create_state_copy_bdd(State state) {
 void SymbolicHMBDDs::create_operators_bdd() {
     operators = manager->bddZero();
     for (size_t i = 0; i < task_proxy.get_operators().size(); ++i) {
-        cout << "operator " << i << endl;
         OperatorProxy op = task_proxy.get_operators()[i];
         BDD preconditionBDD = manager->bddOne();
         for (size_t i = 0; i < op.get_preconditions().size(); ++i) {
@@ -205,7 +237,6 @@ void SymbolicHMBDDs::create_operators_bdd() {
                 if (op.get_effects()[effect].get_fact().get_value() == j && op.get_effects()[effect].get_fact().get_variable().get_id() == i) {
                     effectBDD += fact_to_bdd(fact_num, max_preconditions);
                     effect++;
-                    cout << "fact_num: " << fact_num << endl;
                 }
                 fact_num++;
             }
@@ -228,7 +259,7 @@ void SymbolicHMBDDs::create_operators_bdd() {
         operators += preconditionBDD * effectBDD;
     }
 
-    to_dot("operators.dot", operators);
+    // to_dot("operators.dot", operators);
 
 }
 
