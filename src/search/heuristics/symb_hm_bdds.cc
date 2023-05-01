@@ -47,7 +47,7 @@ void SymbolicHMBDDs::init() {
     for (int i = 0; i < max_preconditions + 1; ++i) {
         std::vector<BDD> fact_bdd_vars_copy;
         for (int j = 0; j < num_fact_bits; ++j) {
-            fact_bdd_vars_copy.push_back(manager->bddVar(i * num_fact_bits + j));
+            fact_bdd_vars_copy.push_back(manager->bddVar(get_var_num(i, j)));
         }
         fact_bdd_vars.push_back(fact_bdd_vars_copy);
     }
@@ -83,13 +83,11 @@ int SymbolicHMBDDs::calculate_heuristic(State state) {
 
         // check if goal is reachable
         if (goal <= current_state) {
-            cout << "reachable in " << count << endl;
             return count;
         }
 
         // check if current state is equal to previous state
         if (current_state == previous_state) {
-            cout << "not reachable" << endl;
             return -1;
         }
 
