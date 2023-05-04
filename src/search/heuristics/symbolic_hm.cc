@@ -16,7 +16,6 @@ namespace symbolic_hm {
 SymbolicHMHeuristic::SymbolicHMHeuristic(const plugins::Options &opts)
     : Heuristic(opts),
       m(opts.get<int>("m")) {
-	assert(m == 1); // We can for now only handle m=1
 
     // get the max number of preconditions
     int max_num_preconditions = 0;
@@ -33,7 +32,7 @@ SymbolicHMHeuristic::SymbolicHMHeuristic(const plugins::Options &opts)
     int num_operators = task_proxy.get_operators().size();
 
 
-    bdds = make_shared<symbolic::SymbolicHMBDDs>(task_proxy);
+    bdds = make_shared<symbolic::SymbolicHMBDDs>(task_proxy, m);
 
     bdds->init();
 
