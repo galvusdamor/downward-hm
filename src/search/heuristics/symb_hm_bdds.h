@@ -6,6 +6,7 @@
 #include "../tasks/root_task.h"
 #include "../plugins/options.h"
 #include <cuddObj.hh>
+#include <map>
 
 
 class GlobalState;
@@ -40,13 +41,12 @@ class SymbolicHMBDDs {
     BDD pre_true_cube;   // BDD for a true cube the size of the preconditions
 
     int max_preconditions; // maximum number of preconditions in the task
-
-    int num_facts;
-    int num_fact_bits;
+    int num_facts; // number of facts in the task
+    int num_fact_bits; // number of bits needed to represent the facts
 
     std::vector<std::vector<BDD>> fact_bdd_vars; // BDDs for each fact
 
-
+    std::map<std::pair<int, int>, int> fact_map; // map from var and if to fact number
 
 public:
     SymbolicHMBDDs(const TaskProxy &task);

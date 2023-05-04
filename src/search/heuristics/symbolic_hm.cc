@@ -55,7 +55,6 @@ int SymbolicHMHeuristic::compute_heuristic(const State &ancestor_state) {
             log << "h^" << m << " value: " << count << endl;
         }
         return count;
-		return 1;
 	}
 }
 
