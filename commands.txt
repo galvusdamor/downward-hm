@@ -1,4 +1,4 @@
-./build.py && ./fast-downward.py classical-domains/classical/blocks/probBLOCKS-4-0.pddl --search "astar(symb_hm())"
+./build.py && ./fast-downward.py classical-domains/classical/blocks/probBLOCKS-4-0.pddl --search "astar(symb_hm(2))"
 
 
 

@@ -4,10 +4,132 @@
 #include <cmath>
 #include <cstdio>
 #include "../utils/logging.h"
-
+#include <stdlib.h>
 
 using namespace std;
 using plugins::Options;
+
+// Returns factorial of n
+int fact(int n)
+{
+      if(n==0)
+      return 1;
+    int res = 1;
+    for (int i = 2; i <= n; i++)
+        res = res * i;
+    return res;
+}
+
+
+int nCr(int n, int r)
+{
+    return fact(n) / (fact(r) * fact(n - r));
+}
+
+
+
+vector<vector<int>> generate_permutations(vector<int> nums) {
+    vector<vector<int>> result;
+    if (nums.size() == 0) {
+        return result;
+    }
+    if (nums.size() == 1) {
+        result.push_back(nums);
+        return result;
+    }
+
+    vector<int> nums_copy = nums;
+    nums_copy.erase(nums_copy.begin());
+    vector<vector<int>> permutations = generate_permutations(nums_copy);
+    for (int j = 0; j < permutations.size(); j++) {
+        for (int k = 0; k < permutations[j].size(); k++) {
+            vector<int> permutation_copy = permutations[j];
+            permutation_copy.insert(permutation_copy.begin() + k, nums[0]);
+            result.push_back(permutation_copy);
+        }
+        permutations[j].push_back(nums[0]);
+        result.push_back(permutations[j]);
+    }
+
+    return result;
+}
+
+
+void generate_sets_util(vector<int>& nums, int m, vector<int>& current_set, vector<vector<int>>& result, int start_index) {
+    if (current_set.size() == m) {
+        result.push_back(current_set);
+        return;
+    }
+
+    for (int i = start_index; i < nums.size(); i++) {
+        current_set.push_back(nums[i]);
+        generate_sets_util(nums, m, current_set, result, i + 1);
+        current_set.pop_back();
+    }
+}
+
+vector<vector<int>> generate_sets(vector<int>& nums, int m) {
+    vector<vector<int>> result;
+    if (m >= nums.size()) {
+        // return single answer
+        result.push_back(nums);
+        if (m > nums.size()) {
+            // add padding
+            for (int i = 0; i < m - nums.size(); i++) {
+                result[0].push_back(nums[0]);
+            }
+        }
+    } else {
+        vector<int> current_set;
+        generate_sets_util(nums, m, current_set, result, 0);
+    }
+
+
+    vector<vector<int>> permutations_result;
+    for (int i = 0; i < result.size(); i++) {
+        vector<vector<int>> permutations = generate_permutations(result[i]);
+        for (int j = 0; j < permutations.size(); j++) {
+            permutations_result.push_back(permutations[j]);
+        }
+    }
+    return permutations_result;
+}
+
+void generate_sets_without_permutations_util(vector<int>& nums, int m, vector<int>& current_set, vector<vector<int>>& result, int start_index) {
+    if (current_set.size() == m) {
+        result.push_back(current_set);
+        return;
+    }
+
+    for (int i = start_index; i < nums.size(); i++) {
+        current_set.push_back(nums[i]);
+        generate_sets_without_permutations_util(nums, m, current_set, result, i + 1);
+        current_set.pop_back();
+    }
+
+}
+
+vector<vector<int>> generate_sets_without_permutations(vector<int>& nums, int m) {
+    if (m >= nums.size()) {
+        // return single answer
+        vector<vector<int>> result;
+        result.push_back(nums);
+        if (m > nums.size()) {
+            // add padding
+            for (int i = 0; i < m - nums.size(); i++) {
+                result[0].push_back(nums[0]);
+            }
+        }
+        return result;
+    }
+    vector<vector<int>> result;
+    vector<int> current_set;
+    generate_sets_without_permutations_util(nums, m, current_set, result, 0);
+    return result;
+}
+
+
+
 
 namespace symbolic {
 
@@ -57,21 +179,74 @@ void SymbolicHMBDDs::init() {
             max_preconditions = num_preconditions;
         }
     }
+#include <stdlib.h>
+    // This has not yet been implemented
+    assert(max_preconditions < m);
+
+    if (m == 1) {
+        num_precondition_sets = max_preconditions;
+        num_implicit_precondition_sets = 0;
+    } else {
+        // numer of sets is ncr of max_preconditions and m
+        num_precondition_sets = nCr(max_preconditions, m);
+        num_implicit_precondition_sets = nCr(max_preconditions, m - 1);
+        for (int i = 0; i < m - 1; ++i) {
+            num_implicit_precondition_sets += nCr(max_preconditions, i);
+        }
+    }
 
 
-    // create cudd manager with variable size (max_preconditions+1) * ceil(log2(facts))
-    manager = new Cudd((max_preconditions + 1) * num_set_bits, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
+    // create cudd manager with variable size (max_preconditions+num_implicit_precondition_sets+1) * ceil(log2(facts))
+    manager = new Cudd((num_precondition_sets + num_implicit_precondition_sets + 1) * num_set_bits, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
 
-    // populate fact_bdd_vars
+    cout << "num_precondition_sets: " << num_precondition_sets << endl;
+
+    // populate fact_bdd_vars and set_bdd_vars
     for (int i = 0; i < max_preconditions + 1; ++i) {
-        std::vector<BDD> fact_bdd_vars_copy;
+        std::vector<BDD> set_bdd_vars_copy;
+        std::vector<std::vector<BDD>> fact_bdd_vars_copy1;
         for (int k = 0; k < m; ++k) {
+            std::vector<BDD> fact_bdd_vars_copy;
             for (int j = 0; j < num_fact_bits; ++j) {
                 fact_bdd_vars_copy.push_back(manager->bddVar(get_var_num(j, k, i)));
+                set_bdd_vars_copy.push_back(manager->bddVar(get_var_num(j, k, i)));
             }
+            // append to fact_bdd_vars
+            fact_bdd_vars_copy1.push_back(fact_bdd_vars_copy);
         }
-        fact_bdd_vars.push_back(fact_bdd_vars_copy);
+        facts_bdd_vars.push_back(fact_bdd_vars_copy1);
+        sets_bdd_vars.push_back(set_bdd_vars_copy);
     }
+
+
+
+    vector<int> nums = {1, 2, 3};
+
+    cout << "Generating sets with permutations:" << endl;
+    vector<vector<int>> sets = generate_sets(nums, m);
+
+    for (const auto& set : sets) {
+        for (const auto& num : set) {
+            cout << num << " ";
+        }
+        cout << endl;
+    }
+
+    cout << "Generating sets without permutations:" << endl;
+    vector<vector<int>> sets_without_permutations = generate_sets_without_permutations(nums, m);
+
+    for (const auto& set : sets_without_permutations) {
+        for (const auto& num : set) {
+            cout << num << " ";
+        }
+        cout << endl;
+    }
+    exit(0);
+
+
+
+
+
 
     create_goal_bdd();
 
@@ -81,7 +256,8 @@ void SymbolicHMBDDs::init() {
         pre_true_cube *= manager->bddVar(i);
     }
     
-
+    // create BDDs for each operator
+    create_operators_bdd();
 
     return;
 }
@@ -92,17 +268,57 @@ int SymbolicHMBDDs::calculate_heuristic(State state) {
     create_current_state_bdd(state);
     BDD previous_state = current_state;
 
+    // TESTING
+
+    // OperatorProxy op = task_proxy.get_operators()[0];
+    // // get list of precondition numbers
+    // std::vector<int> precondition_nums;
+    // for (size_t i = 0; i < op.get_preconditions().size(); ++i) {
+    //     precondition_nums.push_back(fact_map[make_pair(op.get_preconditions()[i].get_variable().get_id(), op.get_preconditions()[i].get_value())]);
+    // }
+    // // make list of precondition sets
+    // std::vector<std::vector<int>> precondition_sets = get_all_ncr_sets(precondition_nums);
+
+    // // print precondition sets
+    // for (size_t i = 0; i < precondition_sets.size(); ++i) {
+    //     for (size_t j = 0; j < precondition_sets[i].size(); ++j) {
+    //         std::cout << precondition_sets[i][j] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+    // // create bdd for the precondition
+    // BDD precondition_bdd = manager->bddOne();
+    // for (size_t i = 0; i < precondition_sets.size(); ++i) {
+    //     BDD precondition_set_bdd = manager->bddOne();
+    //     for (size_t j = 0; j < precondition_sets[i].size(); ++j) {
+    //         precondition_set_bdd *= fact_to_bdd(precondition_sets[i][j], j, i);
+    //     }
+    //     precondition_bdd *= precondition_set_bdd;
+    // }
+
+    // // get effects
+    // std::vector<int> effect_nums;
+    // for (size_t i = 0; i < op.get_effects().size(); ++i) {
+    //     effect_nums.push_back(fact_map[make_pair(op.get_effects()[i].get_fact().get_variable().get_id(), op.get_effects()[i].get_fact().get_value())]);
+    // }
+    // // make list of effect sets
+    // std::vector<std::vector<int>> effect_sets = get_all_npr_sets(effect_nums);
+
+
+
+
+
+
     int count = 0;
     while (true) {
         count++;
         // create state copy BDD
         create_state_copy_bdd();
 
-        // create BDDs for each operator
-        create_operators_bdd();
 
         // get effects and append to current state
-        current_state += operators.AndAbstract(state_copy, pre_true_cube).SwapVariables(fact_bdd_vars[max_preconditions], fact_bdd_vars[0]);
+        current_state += operators.AndAbstract(state_copy, pre_true_cube).SwapVariables(sets_bdd_vars[max_preconditions], sets_bdd_vars[0]);
         
         // check if goal is reachable
         if (goal <= current_state) {
@@ -167,6 +383,17 @@ BDD SymbolicHMBDDs::fact_to_bdd(int fact, int fact_place, int copy) {
     return bdd;
 }
 
+/**
+ * Converts a set of facts to a BDD (by encoding the bits of the facts)
+*/
+BDD SymbolicHMBDDs::set_to_bdd(std::vector<int> facts, int copy) {
+    BDD bdd = manager->bddOne();
+    for (int i = 0; i < facts.size(); ++i) {
+        bdd *= fact_to_bdd(facts[i], i, copy);
+    }
+    return bdd;
+}
+
 int SymbolicHMBDDs::get_var_num(int bit, int fact_place, int copy) {
     return bit + (fact_place * num_fact_bits) + (copy * num_set_bits);
 }
@@ -178,47 +405,28 @@ int SymbolicHMBDDs::get_var_num(int bit, int fact_place, int copy) {
  * made: for each fact, create a BDD with the fact bit set to 1 and the rest to 0
 */
 void SymbolicHMBDDs::create_current_state_bdd(State state) {
-    current_state = manager->bddZero();
+    current_state = manager->bddOne();
     std::vector<int> facts;
     for (FactProxy fact : state) {
         facts.push_back(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())]);
     }
 
-    // create all possible sets of m facts
-    std::vector<std::vector<int>> all_sets = get_all_sets(facts);
+    // create a bdd with each fact
+    BDD fact_bdd = manager->bddZero();
+    for (int fact : facts) {
+        fact_bdd += fact_to_bdd(fact, 0, 0);
+    }
 
-    // create BDD for each set
-    for (std::vector<int> set : all_sets) {
-        BDD set_bdd = manager->bddOne();
-        for (int i = 0; i < m; ++i) {
-            set_bdd *= fact_to_bdd(set[i], i, 0);
-        }
-        current_state += set_bdd;
+    // copy over to each fact in the set
+    for (int i = 0; i < m; ++i) {
     }
 
     to_dot("current_state.dot", current_state);
+    exit(0);
 }
 
-std::vector<std::vector<int>> SymbolicHMBDDs::get_all_sets(std::vector<int> set) {
-    std::vector<std::vector<int>> all_sets;
-    std::vector<int> current_set;
-    get_all_sets_rec(set, 0, current_set, all_sets);
-    return all_sets;
-}
 
-void SymbolicHMBDDs::get_all_sets_rec(std::vector<int> set, int index, std::vector<int> current_set, std::vector<std::vector<int>> &all_sets) {
-    if (current_set.size() == m) {
-        all_sets.push_back(current_set);
-        return;
-    }
-    if (index == set.size()) {
-        return;
-    }
-    current_set.push_back(set[index]);
-    get_all_sets_rec(set, index, current_set, all_sets);
-    current_set.pop_back();
-    get_all_sets_rec(set, index+1, current_set, all_sets);
-}
+
 
 /**
  * Creates the state_copy BDD
@@ -230,7 +438,7 @@ void SymbolicHMBDDs::create_state_copy_bdd() {
 
     state_copy = manager->bddOne();
     for (int i = 0; i < max_preconditions; ++i) {
-        state_copy *= current_state.SwapVariables(fact_bdd_vars[0], fact_bdd_vars[i]);
+        state_copy *= current_state.SwapVariables(sets_bdd_vars[0], sets_bdd_vars[i]);
     }
 
     // to_dot("state_copy.dot", state_copy);
@@ -245,15 +453,11 @@ void SymbolicHMBDDs::create_goal_bdd() {
     }
 
     // create all possible sets of m facts
-    std::vector<std::vector<int>> all_sets = get_all_sets(facts);
+    std::vector<std::vector<int>> all_sets = generate_sets_without_permutations(facts, m);
 
     // create BDD for each set
     for (std::vector<int> set : all_sets) {
-        BDD set_bdd = manager->bddOne();
-        for (int i = 0; i < m; ++i) {
-            set_bdd *= fact_to_bdd(set[i], i, 0);
-        }
-        goal += set_bdd;
+        goal += set_to_bdd(set, 0);
     }
 
     to_dot("goal.dot", goal);

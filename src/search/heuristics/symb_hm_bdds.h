@@ -42,21 +42,27 @@ class SymbolicHMBDDs {
     BDD pre_true_cube;   // BDD for a true cube the size of the preconditions
 
     int max_preconditions; // maximum number of preconditions in the task
+    int num_precondition_sets; // number of sets of preconditions
+    int num_implicit_precondition_sets; // number of sets of implicit preconditions
     int num_facts; // number of facts in the task
     int num_fact_bits; // number of bits needed to represent the facts
     int num_set_bits; // number of set bits in the current state
 
-    std::vector<std::vector<BDD>> fact_bdd_vars; // BDDs for each fact
+    std::vector<std::vector<BDD>> sets_bdd_vars; // BDDs for each set
+    std::vector<std::vector<std::vector<BDD>>> facts_bdd_vars ;// BDDs for each fact
 
     std::map<std::pair<int, int>, int> fact_map; // map from var and if to fact number
 
     std::vector<std::vector<int>> implicit_removes; // implicit removes for each fact
 
 
-    std::vector<std::vector<int>> get_all_sets(std::vector<int> set);
-    // get all sets of size m from a list
-    void get_all_sets_rec(std::vector<int> set, int index, std::vector<int> current_set, std::vector<std::vector<int>> &all_sets);
-    // get all sets of size m from a list (recursive helper function)
+    
+
+    // void generate_sets_util(std::vector<int>& nums, int m, std::vector<int>& current_set, std::vector<std::vector<int>>& result, int start_index);
+    // std::vector<std::vector<int>> generate_sets(std::vector<int>& nums, int m);
+
+    // void generate_sets_without_permutations_util(std::vector<int>& nums, int m, std::vector<int>& current_set, std::vector<std::vector<int>>& result, int start_index);
+    // std::vector<std::vector<int>> generate_sets_without_permutations(std::vector<int>& nums, int m);
 
 
 public:
@@ -69,7 +75,7 @@ public:
 
     void to_dot(const std::string &filename, BDD bdd);
     BDD fact_to_bdd(int fact, int fact_place, int copy);
-
+    BDD set_to_bdd(std::vector<int> facts, int copy);
 
     void create_current_state_bdd(State state);
     void create_state_copy_bdd();
