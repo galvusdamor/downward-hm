@@ -76,6 +76,7 @@ public:
     void to_dot(const std::string &filename, BDD bdd);
     BDD fact_to_bdd(int fact, int fact_place, int copy);
     BDD set_to_bdd(std::vector<int> facts, int copy);
+    BDD createBiimplicationBDD(std::vector<std::vector<BDD>> vars);
 
     void create_current_state_bdd(State state);
     void create_state_copy_bdd();
