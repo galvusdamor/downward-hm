@@ -5,3 +5,6 @@
 links:
 https://add-lib.scce.info/assets/doxygen-cudd-documentation/cudd_8h.html
 https://www.cs.uleth.ca/~rice/cudd_docs/
+
+
+dot -Tpng -Gdpi=1000 operators.dot -o operators.png

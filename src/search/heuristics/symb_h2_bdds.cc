@@ -142,15 +142,26 @@ SymbolicH2BDDs::SymbolicH2BDDs(const TaskProxy &task)
 void SymbolicH2BDDs::init() {
     // get the number of facts and create fact_map
     num_facts = 0;
-    implicit_removes = std::vector<std::vector<int>>(task_proxy.get_variables().size(), std::vector<int>());
     fact_map = std::map<std::pair<int, int>, int>();
     int fact_num = 0;
     for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
         num_facts += task_proxy.get_variables()[i].get_domain_size();
+        int first_fact = fact_num;
         for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
             fact_map[make_pair(i, j)] = fact_num;
-            implicit_removes[i].push_back(fact_num);
             fact_num++;
+        }
+    }
+
+    implicit_removes = vector<vector<int>>(num_facts, vector<int>());
+    for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
+        for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
+            int fact = fact_map[make_pair(i, j)];
+            for (int k = 0; k < task_proxy.get_variables()[i].get_domain_size(); ++k) {
+                if (k != j) {
+                    implicit_removes[fact].push_back(fact_map[make_pair(i, k)]);
+                }
+            }
         }
     }
 
@@ -170,23 +181,16 @@ void SymbolicH2BDDs::init() {
     // This has not yet been implemented
     assert(max_preconditions < m);
 
-    if (m == 1) {
-        num_precondition_sets = max_preconditions;
-        num_implicit_precondition_sets = 0;
-    } else {
-        // numer of sets is ncr of max_preconditions and m
-        num_precondition_sets = nCr(max_preconditions, m);
-        num_implicit_precondition_sets = max_preconditions;
-    }
 
+    // numer of sets is ncr of max_preconditions and m
+    num_precondition_sets = nCr(max_preconditions, m);
+    num_implicit_precondition_sets = max_preconditions;
 
     // create cudd manager with variable size (max_preconditions+num_implicit_precondition_sets+1) * ceil(log2(facts))
     manager = new Cudd((num_precondition_sets + num_implicit_precondition_sets + 1) * num_set_bits, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
 
-    cout << "num_precondition_sets121: " << num_precondition_sets << endl;
-
     // populate fact_bdd_vars and set_bdd_vars
-    for (int i = 0; i < max_preconditions + 1; ++i) {
+    for (int i = 0; i < num_precondition_sets + num_implicit_precondition_sets + 1; ++i) {
         std::vector<BDD> set_bdd_vars_copy;
         std::vector<std::vector<BDD>> fact_bdd_vars_copy1;
         for (int k = 0; k < m; ++k) {
@@ -202,12 +206,11 @@ void SymbolicH2BDDs::init() {
         sets_bdd_vars.push_back(set_bdd_vars_copy);
     }
 
-
     create_goal_bdd();
 
     // create pre_true_cube
-    pre_true_cube = manager->bddVar(max_preconditions * num_set_bits - 1);
-    for (int i = 0; i < max_preconditions * num_set_bits - 1; ++i) {
+    pre_true_cube = manager->bddVar((max_preconditions + num_implicit_precondition_sets) * num_set_bits - 1);
+    for (int i = 0; i < (max_preconditions + num_implicit_precondition_sets) * num_set_bits - 1; ++i) {
         pre_true_cube *= manager->bddVar(i);
     }
     
@@ -227,13 +230,6 @@ int SymbolicH2BDDs::calculate_heuristic(State state) {
 
     std::vector<std::vector<BDD>> vars;
     cout << "vars: " << vars.size() << endl;
-
-    // push the first 3 facts
-    vars.push_back(facts_bdd_vars[0][0]);
-    vars.push_back(facts_bdd_vars[0][1]);
-    vars.push_back(facts_bdd_vars[1][0]);
-    cout << "vars: " << vars.size() << endl;
-    createBiimplicationBDD(vars);
 
     // OperatorProxy op = task_proxy.get_operators()[0];
     // // get list of precondition numbers
@@ -311,20 +307,24 @@ void SymbolicH2BDDs::to_dot(const std::string &filename, BDD bdd) {
     DdNode **ddnodearray = (DdNode **)malloc(sizeof(add.getNode()));
     ddnodearray[0] = add.getNode();
 
-    vector<string> var_names(num_set_bits * (max_preconditions + 1));
+    vector<string> var_names(num_set_bits * (num_precondition_sets + num_implicit_precondition_sets + 1));
     for (int i = 0; i < num_fact_bits; ++i) {
         for (int j = 0; j < m; ++j) {
-            for (int k = 0; k < max_preconditions; ++k) {
+            for (int k = 0; k < num_precondition_sets; ++k) {
                 std::string name = "pre" + to_string(k) + "_fact" + to_string(j) + "_bit" + to_string(i);
                 var_names[get_var_num(i, j, k)] = name;
             }
+            for (int k = num_precondition_sets; k < num_precondition_sets + num_implicit_precondition_sets; ++k) {
+                std::string name = "impl_pre" + to_string(k - num_precondition_sets) + "_fact" + to_string(j) + "_bit" + to_string(i);
+                var_names[get_var_num(i, j, k)] = name;
+            }
             std::string name = "eff_fact" + to_string(j) + "_bit" + to_string(i);
-            var_names[get_var_num(i, j, max_preconditions)] = name;
+            var_names[get_var_num(i, j, num_precondition_sets + num_implicit_precondition_sets)] = name;
         }
     }
 
-    vector<char *> inames(num_set_bits * (max_preconditions + 1));
-    for (int i = 0; i < num_set_bits * (max_preconditions + 1); ++i) {
+    vector<char *> inames(num_set_bits * (num_precondition_sets + num_implicit_precondition_sets + 1));
+    for (int i = 0; i < num_set_bits * (num_precondition_sets + num_implicit_precondition_sets + 1); ++i) {
         inames[i] = &var_names[i].front();
     }
 
@@ -473,83 +473,165 @@ void SymbolicH2BDDs::create_operators_bdd() {
     //     operators += preconditionBDD * effectBDD;
     // }
 
+    for (size_t i = 0; i < task_proxy.get_operators().size(); ++i) {
+        OperatorProxy op = task_proxy.get_operators()[i];
+        vector<int> preconditions;
+        for (size_t i = 0; i < op.get_preconditions().size(); ++i) {
+            FactProxy fact = op.get_preconditions()[i];
+            preconditions.push_back(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())]);
+        }
+        vector<vector<int>> precondition_sets = generate_sets_without_permutations(preconditions, m);
+        BDD preconditionBDD = manager->bddOne();
+        for (size_t i = 0; i < precondition_sets.size(); ++i) {
+            preconditionBDD *= set_to_bdd(precondition_sets[i], i);
+        }
+        cout << "preconditions: " << endl;
+        for (size_t i = 0; i < precondition_sets.size(); ++i) {
+            for (size_t j = 0; j < precondition_sets[i].size(); ++j) {
+                cout << precondition_sets[i][j] << " ";
+            }
+            cout << endl;
+        }
+        cout << "precondition sets: " << endl;
+        for (size_t i = 0; i < precondition_sets.size(); ++i) {
+            for (size_t j = 0; j < precondition_sets[i].size(); ++j) {
+                cout << precondition_sets[i][j] << " ";
+            }
+            cout << endl;
+        }
+        // create biimps
+        vector<vector<BDD>> biimp_vars_1;
+        vector<vector<BDD>> biimp_vars_2;
+        for (size_t i = num_precondition_sets; i < num_precondition_sets + num_implicit_precondition_sets; ++i) {
+            biimp_vars_1.push_back(facts_bdd_vars[i][1]);
+            biimp_vars_2.push_back(facts_bdd_vars[i][0]);
+        }
+        biimp_vars_1.push_back(facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][1]);
+        biimp_vars_2.push_back(facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][0]);
+        BDD implicit_preconditionBDD_1 = createBiimplicationBDD(biimp_vars_1) * preconditionBDD;
+        BDD implicit_preconditionBDD_2 = createBiimplicationBDD(biimp_vars_2) * preconditionBDD;
+        // implicit removes
+        BDD implicit_removeBDD = manager->bddZero();
+        for (size_t i = 0; i < preconditions.size(); ++i) {
+            for (size_t j = 0; j < implicit_removes[preconditions[i]].size(); ++j) {
+                implicit_removeBDD += fact_to_bdd(implicit_removes[preconditions[i]][j], 0, 0);
+            }
+        }
+        cout << "implicit removes: " << endl;
+        for (size_t i = 0; i < preconditions.size(); ++i) {
+            for (size_t j = 0; j < implicit_removes[preconditions[i]].size(); ++j) {
+                cout << implicit_removes[preconditions[i]][j] << " ";
+            }
+            cout << endl;
+        }
+        // create implicit preconditions
+        BDD temp = manager->bddZero();
+        for (size_t i = 0; i < preconditions.size(); ++i) {
+            temp += fact_to_bdd(preconditions[i], 0, 0);
+        }
+        for (size_t i = num_precondition_sets; i < num_precondition_sets + num_implicit_precondition_sets + 1; ++i) {
+            implicit_preconditionBDD_1 *= temp.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[i][0]);
+            implicit_preconditionBDD_2 *= temp.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[i][0]);
+        }
+        implicit_preconditionBDD_1 *= temp.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][0]);
+        implicit_preconditionBDD_2 *= temp.SwapVariables(facts_bdd_vars[0][1], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][1]);
+        implicit_preconditionBDD_1 -= implicit_removeBDD.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][1]);
+        implicit_preconditionBDD_2 -= implicit_removeBDD.SwapVariables(facts_bdd_vars[0][1], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][0]);
+
+        BDD effectBDD = manager->bddZero();
+        for (size_t i = 0; i < op.get_effects().size(); ++i) {
+            FactProxy fact = op.get_effects()[i].get_fact();
+            effectBDD += fact_to_bdd(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())], 0, max_preconditions);
+        }
+        cout << "effect: " << endl;
+        for (size_t i = 0; i < op.get_effects().size(); ++i) {
+            FactProxy fact = op.get_effects()[i].get_fact();
+            cout << fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())] << " ";
+        }
+
+
+        operators += (preconditionBDD * effectBDD) + (preconditionBDD * (implicit_preconditionBDD_1 + implicit_preconditionBDD_2));
+        to_dot("operators.dot", operators);
+        exit(0);
+    }
+
     // for each operator
     // create precondition bdd (sets)
     // create normal effect bdd (permutation sets)
     // create implicit adding preconditions bdd (sets)
     // add effects to precondition bdd (permutation sets)
-    for (OperatorProxy op: task_proxy.get_operators()) {
-        vector<int> preconditions;
-        for (FactProxy fact : op.get_preconditions()) {
-            preconditions.push_back(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())]);
-        }
+    // for (OperatorProxy op: task_proxy.get_operators()) {
+    //     vector<int> preconditions;
+    //     for (FactProxy fact : op.get_preconditions()) {
+    //         preconditions.push_back(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())]);
+    //     }
         
-        // precondition sets
-        vector<vector<int>> precondition_sets = generate_sets_without_permutations(preconditions, m);
-        BDD preconditionBDD = manager->bddZero();
-        for (int i = 0; i < precondition_sets.size(); ++i) {
-            preconditionBDD += set_to_bdd(precondition_sets[i], i);
-        }
-        // todo: m can also be included, there will only be preconditions, not implicit ones
-        // but have to keep track of which variables to use
+    //     // precondition sets
+    //     vector<vector<int>> precondition_sets = generate_sets_without_permutations(preconditions, m);
+    //     BDD preconditionBDD = manager->bddZero();
+    //     for (int i = 0; i < precondition_sets.size(); ++i) {
+    //         preconditionBDD += set_to_bdd(precondition_sets[i], i);
+    //     }
+    //     // todo: m can also be included, there will only be preconditions, not implicit ones
+    //     // but have to keep track of which variables to use
 
-        // implicit preconditions
-        map<int, BDD> implicit_map;
-        BDD implicit_preconditionsBDD = manager->bddZero();
-        // check for each set of size i for implicit adds
-        for (int i = m; i > 1; --i) {
-            // sets of size i
-            vector<vector<int>> implicit_precondition_sets = generate_sets_without_permutations(preconditions, i);
-            // create biimp bdd
-            BDD biimplicationBDD = manager->bddOne();
-            for (int j = m - 1; j > i; --j) {
-                std::vector<std::vector<BDD>> biimp_vars;
-                for (int k = num_precondition_sets; k < num_precondition_sets + implicit_precondition_sets.size(); ++k) {
-                    biimp_vars.push_back(facts_bdd_vars[k][j]);
-                }
-                // add effects layer
-                biimp_vars.push_back(facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][j]);
-                biimplicationBDD *= createBiimplicationBDD(biimp_vars);
-            }
-
-
-            // create biggest set size precondition BDD
-            BDD implicit_preconditionBDD = manager->bddOne();
-            for (int j = 0; j < implicit_precondition_sets.size(); ++j) {
-                BDD precondition_set_bdd = set_to_bdd(implicit_precondition_sets[j], num_precondition_sets = j);
-                implicit_preconditionBDD *= precondition_set_bdd;
-            }
-            implicit_map[i] = implicit_preconditionBDD;
+    //     // implicit preconditions
+    //     map<int, BDD> implicit_map;
+    //     BDD implicit_preconditionsBDD = manager->bddZero();
+    //     // check for each set of size i for implicit adds
+    //     for (int i = m; i > 1; --i) {
+    //         // sets of size i
+    //         vector<vector<int>> implicit_precondition_sets = generate_sets_without_permutations(preconditions, i);
+    //         // create biimp bdd
+    //         BDD biimplicationBDD = manager->bddOne();
+    //         for (int j = m - 1; j > i; --j) {
+    //             std::vector<std::vector<BDD>> biimp_vars;
+    //             for (int k = num_precondition_sets; k < num_precondition_sets + implicit_precondition_sets.size(); ++k) {
+    //                 biimp_vars.push_back(facts_bdd_vars[k][j]);
+    //             }
+    //             // add effects layer
+    //             biimp_vars.push_back(facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][j]);
+    //             biimplicationBDD *= createBiimplicationBDD(biimp_vars);
+    //         }
 
 
-            //TODO add other sizes
-            //todo check implicit removes
+    //         // create biggest set size precondition BDD
+    //         BDD implicit_preconditionBDD = manager->bddOne();
+    //         for (int j = 0; j < implicit_precondition_sets.size(); ++j) {
+    //             BDD precondition_set_bdd = set_to_bdd(implicit_precondition_sets[j], num_precondition_sets = j);
+    //             implicit_preconditionBDD *= precondition_set_bdd;
+    //         }
+    //         implicit_map[i] = implicit_preconditionBDD;
 
 
-            // add effects layer
-            std::vector<int> effects;
-            for (EffectProxy effect : op.get_effects()) {
-                effects.push_back(fact_map[make_pair(effect.get_fact().get_variable().get_id(), effect.get_fact().get_value())]);
-            }
-            vector<vector<int>> effect_sets = generate_sets(effects, i);
-            BDD effectBDD = manager->bddZero();
-            for (int j = 0; j < effect_sets.size(); ++j) {
-                effectBDD += set_to_bdd(effect_sets[j], num_precondition_sets + num_implicit_precondition_sets + j);
-            }
-
-            implicit_preconditionsBDD += preconditionBDD * biimplicationBDD * implicit_preconditionBDD * effectBDD;
-        }
+    //         //TODO add other sizes
+    //         //todo check implicit removes
 
 
-        // effects
-        std::vector<int> effects;
-        for (EffectProxy effect : op.get_effects()) {
-            effects.push_back(fact_map[make_pair(effect.get_fact().get_variable().get_id(), effect.get_fact().get_value())]);
-        }
-        vector<vector<int>> effect_sets = generate_sets(effects, m);
-        BDD effectBDD = manager->bddZero();
+    //         // add effects layer
+    //         std::vector<int> effects;
+    //         for (EffectProxy effect : op.get_effects()) {
+    //             effects.push_back(fact_map[make_pair(effect.get_fact().get_variable().get_id(), effect.get_fact().get_value())]);
+    //         }
+    //         vector<vector<int>> effect_sets = generate_sets(effects, i);
+    //         BDD effectBDD = manager->bddZero();
+    //         for (int j = 0; j < effect_sets.size(); ++j) {
+    //             effectBDD += set_to_bdd(effect_sets[j], num_precondition_sets + num_implicit_precondition_sets + j);
+    //         }
 
-    }
+    //         implicit_preconditionsBDD += preconditionBDD * biimplicationBDD * implicit_preconditionBDD * effectBDD;
+    //     }
+
+
+    //     // effects
+    //     std::vector<int> effects;
+    //     for (EffectProxy effect : op.get_effects()) {
+    //         effects.push_back(fact_map[make_pair(effect.get_fact().get_variable().get_id(), effect.get_fact().get_value())]);
+    //     }
+    //     vector<vector<int>> effect_sets = generate_sets(effects, m);
+    //     BDD effectBDD = manager->bddZero();
+
+    // }
 
     // to_dot("operators.dot", operators);
 
