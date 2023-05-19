@@ -1,0 +1,82 @@
+digraph "DD" {
+size = "7.5,10"
+center = true;
+edge [dir = none];
+{ node [shape = plaintext];
+  edge [style = invis];
+  "CONST NODES" [style = invis];
+" eff_fact0_bit0 " -> " eff_fact0_bit1 " -> " eff_fact0_bit2 " -> " eff_fact0_bit3 " -> " eff_fact0_bit4 " -> " eff_fact1_bit0 " -> " eff_fact1_bit1 " -> " eff_fact1_bit2 " -> " eff_fact1_bit3 " -> " eff_fact1_bit4 " -> "CONST NODES"; 
+}
+{ rank = same; node [shape = box]; edge [style = invis];
+"F0"; }
+{ rank = same; " eff_fact0_bit0 ";
+"0x60c80";
+}
+{ rank = same; " eff_fact0_bit1 ";
+"0x60c7f";
+}
+{ rank = same; " eff_fact0_bit2 ";
+"0x60c7e";
+"0x60c7c";
+}
+{ rank = same; " eff_fact0_bit3 ";
+"0x60c7b";
+"0x60c7d";
+}
+{ rank = same; " eff_fact0_bit4 ";
+"0x60c7a";
+}
+{ rank = same; " eff_fact1_bit0 ";
+"0x60c79";
+}
+{ rank = same; " eff_fact1_bit1 ";
+"0x60c78";
+}
+{ rank = same; " eff_fact1_bit2 ";
+"0x60c75";
+"0x60c77";
+}
+{ rank = same; " eff_fact1_bit3 ";
+"0x60c74";
+"0x60c76";
+}
+{ rank = same; " eff_fact1_bit4 ";
+"0x60c73";
+}
+{ rank = same; "CONST NODES";
+{ node [shape = box]; "0x5ee9c";
+"0x5ee9b";
+}
+}
+"F0" -> "0x60c80" [style = solid];
+"0x60c80" -> "0x5ee9c";
+"0x60c80" -> "0x60c7f" [style = dashed];
+"0x60c7f" -> "0x60c7c";
+"0x60c7f" -> "0x60c7e" [style = dashed];
+"0x60c7e" -> "0x60c7b";
+"0x60c7e" -> "0x60c7d" [style = dashed];
+"0x60c7c" -> "0x60c7b";
+"0x60c7c" -> "0x5ee9c" [style = dashed];
+"0x60c7b" -> "0x60c7a";
+"0x60c7b" -> "0x5ee9c" [style = dashed];
+"0x60c7d" -> "0x5ee9c";
+"0x60c7d" -> "0x60c7a" [style = dashed];
+"0x60c7a" -> "0x5ee9c";
+"0x60c7a" -> "0x60c79" [style = dashed];
+"0x60c79" -> "0x5ee9c";
+"0x60c79" -> "0x60c78" [style = dashed];
+"0x60c78" -> "0x60c75";
+"0x60c78" -> "0x60c77" [style = dashed];
+"0x60c75" -> "0x60c74";
+"0x60c75" -> "0x5ee9c" [style = dashed];
+"0x60c77" -> "0x60c74";
+"0x60c77" -> "0x60c76" [style = dashed];
+"0x60c74" -> "0x60c73";
+"0x60c74" -> "0x5ee9c" [style = dashed];
+"0x60c76" -> "0x5ee9c";
+"0x60c76" -> "0x60c73" [style = dashed];
+"0x60c73" -> "0x5ee9c";
+"0x60c73" -> "0x5ee9b" [style = dashed];
+"0x5ee9c" [label = "0"];
+"0x5ee9b" [label = "1"];
+}
