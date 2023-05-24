@@ -228,23 +228,18 @@ int SymbolicH2BDDs::calculate_heuristic(State state) {
 
     int count = 0;
     while (true) {
-        cout << "count: " << count << endl;
-        to_dot("current_state" + to_string(count) + ".dot", current_state);
-        count++;
-        // create state copy BDD
-        create_state_copy_bdd();
-        to_dot("state_copy" + to_string(count) + ".dot", state_copy);
-
-
-        // get effects and append to current state
-        to_dot("effects" + to_string(count) + ".dot", operators.AndAbstract(state_copy, pre_true_cube).SwapVariables(sets_bdd_vars[num_precondition_sets + num_implicit_precondition_sets], sets_bdd_vars[0]));
-        current_state += operators.AndAbstract(state_copy, pre_true_cube).SwapVariables(sets_bdd_vars[num_precondition_sets + num_implicit_precondition_sets], sets_bdd_vars[0]);
-        
         // check if goal is reachable
         if (goal <= current_state) {
             return count;
         }
+        
+        count++;
+        // create state copy BDD
+        create_state_copy_bdd();
 
+        // get effects and append to current state
+        current_state += operators.AndAbstract(state_copy, pre_true_cube).SwapVariables(sets_bdd_vars[num_precondition_sets + num_implicit_precondition_sets], sets_bdd_vars[0]);
+        
         // check if current state is equal to previous state
         if (current_state == previous_state) {
             return -1;
@@ -358,14 +353,9 @@ BDD SymbolicH2BDDs::createBiimplicationBDD(std::vector<std::vector<BDD>> vars) {
         for (int j = 0; j < vars.size() - 1; ++j) {
             xnor *= vars[j][i].Xnor(vars[j+1][i]);
         }
-        // to_dot("biimp.dot", xnor); // small one
-        // exit(0);
-
         bdd *= xnor;
 
     }
-    // to_dot("biimp.dot", bdd); // big one
-    // exit(0);
     return bdd;
 }
 
@@ -401,7 +391,7 @@ void SymbolicH2BDDs::create_goal_bdd() {
         goal += set_to_bdd(set, 0);
     }
 
-    to_dot("goal.dot", goal);
+    // to_dot("goal.dot", goal);
 }
 
 
@@ -415,31 +405,16 @@ void SymbolicH2BDDs::create_goal_bdd() {
 */
 void SymbolicH2BDDs::create_operators_bdd() {
     operators = manager->bddZero();
-    // for (size_t i = 0; i < task_proxy.get_operators().size(); ++i) {
-    //     OperatorProxy op = task_proxy.get_operators()[i];
-    //     BDD preconditionBDD = manager->bddOne();
-    //     for (size_t i = 0; i < op.get_preconditions().size(); ++i) {
-    //         FactProxy fact = op.get_preconditions()[i];
-    //         preconditionBDD *= fact_to_bdd(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())], 0, i);
-    //     }
-    //     BDD effectBDD = manager->bddZero();
-    //     for (size_t i = 0; i < op.get_effects().size(); ++i) {
-    //         FactProxy fact = op.get_effects()[i].get_fact();
-    //         effectBDD += fact_to_bdd(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())], 0, max_preconditions);
-    //     }
-
-
-    //     operators += preconditionBDD * effectBDD;
-    // }
-
-    for (size_t i = 0; i < task_proxy.get_operators().size(); ++i) {
-        OperatorProxy op = task_proxy.get_operators()[i];
+    for (OperatorProxy op : task_proxy.get_operators()) {
+        // get preconditions
         vector<int> preconditions;
         for (size_t i = 0; i < op.get_preconditions().size(); ++i) {
             FactProxy fact = op.get_preconditions()[i];
             preconditions.push_back(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())]);
         }
+        // get precondition sets
         vector<vector<int>> precondition_sets = generate_sets_without_permutations(preconditions, m);
+        // create precondition BDD
         BDD preconditionBDD = manager->bddOne();
         for (size_t i = 0; i < precondition_sets.size(); ++i) {
             preconditionBDD *= set_to_bdd(precondition_sets[i], i);
@@ -448,7 +423,7 @@ void SymbolicH2BDDs::create_operators_bdd() {
         // create biimps
         vector<vector<BDD>> biimp_vars_1;
         vector<vector<BDD>> biimp_vars_2;
-        for (size_t i = num_precondition_sets; i < num_precondition_sets + num_implicit_precondition_sets; ++i) {
+        for (size_t i = num_precondition_sets; i < num_precondition_sets + op.get_preconditions().size(); ++i) {
             biimp_vars_1.push_back(facts_bdd_vars[i][1]);
             biimp_vars_2.push_back(facts_bdd_vars[i][1]);
         }
@@ -466,29 +441,29 @@ void SymbolicH2BDDs::create_operators_bdd() {
         }
 
         // create implicit preconditions
-        BDD temp = manager->bddZero();
         for (size_t i = 0; i < preconditions.size(); ++i) {
-            temp += fact_to_bdd(preconditions[i], 0, 0);
+            implicit_preconditionBDD_1 *= fact_to_bdd(preconditions[i], 0, num_precondition_sets + i);
+            implicit_preconditionBDD_2 *= fact_to_bdd(preconditions[i], 0, num_precondition_sets + i);
         }
-        for (size_t i = num_precondition_sets; i < num_precondition_sets + num_implicit_precondition_sets; ++i) {
-            implicit_preconditionBDD_1 *= temp.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[i][0]);
-            implicit_preconditionBDD_2 *= temp.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[i][0]);
-        }
-        implicit_preconditionBDD_1 *= temp.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][0]);
-        implicit_preconditionBDD_2 *= temp.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][1]);
-        implicit_preconditionBDD_1 -= implicit_removeBDD.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][1]);
-        implicit_preconditionBDD_2 -= implicit_removeBDD.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][0]);
-        
+
+        // create fact effect BDD
         BDD effectBDD = manager->bddZero();
-        vector<int> effects;
         for (size_t i = 0; i < op.get_effects().size(); ++i) {
             FactProxy fact = op.get_effects()[i].get_fact();
             effectBDD += fact_to_bdd(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())], 0, num_precondition_sets + num_implicit_precondition_sets);
         }
+
+        // add the effects to the biimplication
+        implicit_preconditionBDD_1 *= effectBDD;
+        implicit_preconditionBDD_2 *= effectBDD.SwapVariables(facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][0], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][1]);
+        // remove the implicited deletes
+        implicit_preconditionBDD_1 -= implicit_removeBDD.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][1]);
+        implicit_preconditionBDD_2 -= implicit_removeBDD.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][0]);
+        // create set effect BDD
         effectBDD *= effectBDD.SwapVariables(facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][0], facts_bdd_vars[num_precondition_sets + num_implicit_precondition_sets][1]);
+        // add to operators
         operators += (preconditionBDD * effectBDD) + (implicit_preconditionBDD_1 + implicit_preconditionBDD_2);
     }
-    to_dot("operators.dot", operators);
 }
 
 }
