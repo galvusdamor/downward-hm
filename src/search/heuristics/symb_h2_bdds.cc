@@ -313,8 +313,9 @@ BDD SymbolicH2BDDs::set_to_bdd(std::vector<int> facts, int copy) {
     return bdd;
 }
 
-int SymbolicH2BDDs::get_var_num(int bit, int fact_place, int copy) {
-    return bit + (fact_place * num_fact_bits) + (copy * num_set_bits);
+int SymbolicH2BDDs::get_var_num(int bit, int fact, int set) {
+    // return bit + (fact_place * num_fact_bits) + (copy * num_set_bits);
+    return set + (bit * (num_precondition_sets + num_implicit_precondition_sets + 1)) + (fact * (num_precondition_sets + num_implicit_precondition_sets + 1) * num_fact_bits);
 }
 
 /**
@@ -324,15 +325,11 @@ int SymbolicH2BDDs::get_var_num(int bit, int fact_place, int copy) {
  * made: for each fact, create a BDD with the fact bit set to 1 and the rest to 0
 */
 void SymbolicH2BDDs::create_current_state_bdd(State state) {
-    std::vector<int> facts;
-    for (FactProxy fact : state) {
-        facts.push_back(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())]);
-    }
-
     // create a bdd with each fact
     BDD fact_bdd = manager->bddZero();
-    for (int fact : facts) {
-        fact_bdd += fact_to_bdd(fact, 0, 0);
+    for (FactProxy fact : state) {
+        cout << "fact: " << fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())] << endl;
+        fact_bdd += fact_to_bdd(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())], 0, 0);
     }
 
     current_state = manager->bddOne();
@@ -340,8 +337,6 @@ void SymbolicH2BDDs::create_current_state_bdd(State state) {
     for (int i = 0; i < m; ++i) {
         current_state *= fact_bdd.SwapVariables(facts_bdd_vars[0][0], facts_bdd_vars[0][i]);
     }
-
-    // to_dot("current_state.dot", current_state);
 }
 
 
