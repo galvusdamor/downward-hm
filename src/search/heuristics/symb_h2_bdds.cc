@@ -160,9 +160,7 @@ void SymbolicH2BDDs::init() {
         for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
             int fact = fact_map[make_pair(i, j)];
             for (int k = 0; k < task_proxy.get_variables()[i].get_domain_size(); ++k) {
-                if (k != j) {
-                    implicit_removes[fact].push_back(fact_map[make_pair(i, k)]);
-                }
+                implicit_removes[fact].push_back(fact_map[make_pair(i, k)]);
             }
         }
     }
@@ -242,6 +240,19 @@ int SymbolicH2BDDs::calculate_heuristic(State state) {
         // get effects and append to current state
         current_state += operators.AndAbstract(state_copy, pre_true_cube).SwapVariables(sets_bdd_vars[num_precondition_sets + num_implicit_precondition_sets], sets_bdd_vars[0]);
         
+        // // print all variables that are true in current state
+        // for (int i = 0; i < implicit_removes.size(); ++i) {
+        //     for (int j = 0; j < implicit_removes.size(); ++j) {
+        //         BDD tset = set_to_bdd({i, j}, 0);
+        //         if (tset <= current_state) {
+        //             cout << "true: " << i << " " << j << endl;
+        //         }
+        //     }
+        // }
+        // exit(0);
+
+
+
         // check if current state is equal to previous state
         if (current_state == previous_state) {
             return -1;
