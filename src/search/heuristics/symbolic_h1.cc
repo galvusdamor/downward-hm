@@ -1,5 +1,5 @@
-#include "symbolic_hm.h"
-#include "symb_hm_bdds.h"
+#include "symbolic_h1.h"
+#include "symb_h1_bdds.h"
 
 #include "../plugins/plugin.h"
 
@@ -12,56 +12,38 @@
 
 using namespace std;
 
-namespace symbolic_hm {
-SymbolicHMHeuristic::SymbolicHMHeuristic(const plugins::Options &opts)
-    : Heuristic(opts),
-      m(opts.get<int>("m")) {
+namespace symbolic_h1 {
+SymbolicH1Heuristic::SymbolicH1Heuristic(const plugins::Options &opts)
+    : Heuristic(opts) {
 
-    // get the max number of preconditions
-    int max_num_preconditions = 0;
-    for (OperatorProxy op : task_proxy.get_operators()) {
-        int num_preconditions = 0;
-        for (FactProxy pre : op.get_preconditions()) {
-            num_preconditions++;
-        }
-        if (num_preconditions > max_num_preconditions) {
-            max_num_preconditions = num_preconditions;
-        }
-    }
-    // get the amount of operators
-    int num_operators = task_proxy.get_operators().size();
-
-
-    bdds = make_shared<symbolic::SymbolicHMBDDs>(task_proxy, m);
+    bdds = make_shared<symbolic_1::SymbolicH1BDDs>(task_proxy);
 
     bdds->init();
 
-
 	if (log.is_at_least_normal()) {
-        log << "Using symbolic h^" << m << "." << endl;
+        log << "Using symbolic h^1." << endl;
     }
 }
 
 
 
-int SymbolicHMHeuristic::compute_heuristic(const State &ancestor_state) {
+int SymbolicH1Heuristic::compute_heuristic(const State &ancestor_state) {
     State state = convert_ancestor_state(ancestor_state);
     if (task_properties::is_goal_state(task_proxy, state)) {
         return 0;
     } else {
         int count = bdds->calculate_heuristic(state);
         if (log.is_at_least_verbose()) {
-            log << "h^" << m << " value: " << count << endl;
+            log << "h^1 value: " << count << endl;
         }
         return count;
-	}
+    }
 }
 
-class SymbolicHMHeuristicFeature : public plugins::TypedFeature<Evaluator, SymbolicHMHeuristic> {
+class SymbolicH1HeuristicFeature : public plugins::TypedFeature<Evaluator, SymbolicH1Heuristic> {
 public:
-    SymbolicHMHeuristicFeature() : TypedFeature("symb_hm") {
-        document_title("symbolic h^m heuristic");
-
+    SymbolicH1HeuristicFeature() : TypedFeature("symb_h1") {
+        document_title("symbolic h^1 heuristic");
         add_option<int>("m", "subset size", "1", plugins::Bounds("1", "infinity"));
         Heuristic::add_options_to_feature(*this);
 
@@ -83,5 +65,5 @@ public:
 };
 
 
-static plugins::FeaturePlugin<SymbolicHMHeuristicFeature> _plugin;
+static plugins::FeaturePlugin<SymbolicH1HeuristicFeature> _plugin;
 }

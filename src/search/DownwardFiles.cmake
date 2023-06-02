@@ -554,15 +554,33 @@ fast_downward_plugin(
     DEPENDS TASK_PROPERTIES
 )
 
+# fast_downward_plugin(
+#     NAME SYMBOLIC_HM_HEURISTIC
+#     HELP "The symbolic h^m heuristic"
+#     SOURCES
+#         heuristics/symbolic_hm
+#         heuristics/symb_hm_bdds
+#     DEPENDS TASK_PROPERTIES
+# )
+
 fast_downward_plugin(
-	NAME SYMBOLIC_HM_HEURISTIC
-    HELP "The symbolic h^m heuristic"
+    NAME SYMBOLIC_H1_HEURISTIC
+    HELP "The symbolic h^1 heuristic"
     SOURCES
-        heuristics/symbolic_hm
-        heuristics/sym_variables
-        heuristics/transition_relation
+        heuristics/symbolic_h1
+        heuristics/symb_h1_bdds
     DEPENDS TASK_PROPERTIES
 )
+
+fast_downward_plugin(
+    NAME SYMBOLIC_H2_HEURISTIC
+    HELP "The symbolic h^2 heuristic"
+    SOURCES
+        heuristics/symbolic_h2
+        heuristics/symb_h2_bdds
+    DEPENDS TASK_PROPERTIES
+)
+
 
 fast_downward_plugin(
     NAME LANDMARK_CUT_HEURISTIC

@@ -1,0 +1,54 @@
+digraph "DD" {
+size = "7.5,10"
+center = true;
+edge [dir = none];
+{ node [shape = plaintext];
+  edge [style = invis];
+  "CONST NODES" [style = invis];
+" eff_fact0_bit0 " -> " eff_fact0_bit1 " -> " eff_fact0_bit2 " -> " eff_fact0_bit3 " -> " eff_fact0_bit4 " -> "CONST NODES"; 
+}
+{ rank = same; node [shape = box]; edge [style = invis];
+"F0"; }
+{ rank = same; " eff_fact0_bit0 ";
+"0x6897";
+}
+{ rank = same; " eff_fact0_bit1 ";
+"0x6894";
+"0x6896";
+}
+{ rank = same; " eff_fact0_bit2 ";
+"0x6893";
+}
+{ rank = same; " eff_fact0_bit3 ";
+"0x6892";
+"0x6895";
+}
+{ rank = same; " eff_fact0_bit4 ";
+"0x688a";
+"0x688e";
+}
+{ rank = same; "CONST NODES";
+{ node [shape = box]; "0x61c";
+"0x61b";
+}
+}
+"F0" -> "0x6897" [style = solid];
+"0x6897" -> "0x6894";
+"0x6897" -> "0x6896" [style = dashed];
+"0x6894" -> "0x6893";
+"0x6894" -> "0x61c" [style = dashed];
+"0x6896" -> "0x6895";
+"0x6896" -> "0x61c" [style = dashed];
+"0x6893" -> "0x61c";
+"0x6893" -> "0x6892" [style = dashed];
+"0x6892" -> "0x61c";
+"0x6892" -> "0x688e" [style = dashed];
+"0x6895" -> "0x61c";
+"0x6895" -> "0x688a" [style = dashed];
+"0x688a" -> "0x61b";
+"0x688a" -> "0x61c" [style = dashed];
+"0x688e" -> "0x61c";
+"0x688e" -> "0x61b" [style = dashed];
+"0x61c" [label = "0"];
+"0x61b" [label = "1"];
+}

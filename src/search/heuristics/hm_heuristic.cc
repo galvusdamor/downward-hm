@@ -41,6 +41,30 @@ int HMHeuristic::compute_heuristic(const State &ancestor_state) {
 
         init_hm_table(s_tup);
         update_hm_table();
+        // // print hm_table
+        // std::map<std::pair<int, int>, int> fact_map = std::map<std::pair<int, int>, int>();
+        // int fact_num = 0;
+        // for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
+        //     int first_fact = fact_num;
+        //     for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
+        //         fact_map[make_pair(i, j)] = fact_num;
+        //         fact_num++;
+        //     }
+        // }
+
+        // for (auto &hm_ent : hm_table) {
+        //     const Tuple &tuple = hm_ent.first;
+        //     int h_val = hm_ent.second;
+        //     if (h_val != 1 && h_val != 0) {
+        //         continue;
+        //     }
+        //     cout << "tuple: ";
+        //     for (auto &fact : tuple) {
+        //         cout << fact_map[make_pair(fact.var, fact.value)] << " ";
+        //     }
+        //     cout << "h_val: " << h_val << endl;
+        // }
+        // exit(0);
 
         int h = eval(goals);
 
