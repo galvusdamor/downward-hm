@@ -3,9 +3,9 @@
 ./build.py && ./fast-downward.py classical-domains/classical/blocks/probBLOCKS-4-0.pddl --search "astar(symb_h2(transform=adapt_costs(one)))"
 
 
-UNICOST TEST
-./fast-downward.py classical-domains/classical/woodworking-opt08-strips/p01.pddl --search "astar(symb_h2(transform=adapt_costs(one)))"
-./fast-downward.py classical-domains/classical/woodworking-opt08-strips/p01.pddl --search "astar(symb_h2())"
+h1 TEST
+./build.py && ./fast-downward.py classical-domains/classical/zenotravel/pfile2.pddl --search "astar(hm(2,transform=adapt_costs(one)))"
+./build.py && ./fast-downward.py classical-domains/classical/zenotravel/pfile2.pddl --search "astar(symb_h2(transform=adapt_costs(one)))"
 
 
 ./build.py && ./fast-downward.py classical-domains/classical-sas/blocks-probBLOCKS-4-0.sas --search "astar(symb_h2())"
@@ -20,6 +20,7 @@ dot -Tpng -Gdpi=3000 operators.dot -o operators.png
 dot -Tpng -Gdpi=1000 effectBDD.dot -o effectBDD.png
 dot -Tpng -Gdpi=1000 goal.dot -o goal.png
 dot -Tpng -Gdpi=1000 test.dot -o test.png
+dot -Tpng -Gdpi=1000 state_copy.dot -o state_copy.png
 dot -Tpng -Gdpi=2000 implicit_preconditionBDD.dot -o implicit_preconditionBDD.png
 dot -Tpng -Gdpi=2000 implicit_preconditionBDD_1.dot -o implicit_preconditionBDD_1.png
 dot -Tpng -Gdpi=1000 implicit_preconditionBDD_2.dot -o implicit_preconditionBDD_2.png

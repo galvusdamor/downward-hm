@@ -22,8 +22,14 @@ SymbolicH1BDDs::SymbolicH1BDDs(const TaskProxy &task)
 void SymbolicH1BDDs::init() {
     // get the number of facts
     num_facts = 0;
+    fact_map = std::map<std::pair<int, int>, int>();
+    int fact_num = 0;
     for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
         num_facts += task_proxy.get_variables()[i].get_domain_size();
+        for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
+            fact_map[make_pair(i, j)] = fact_num;
+            fact_num++;
+        }
     }
 
     // get the number of fact bits
@@ -58,16 +64,6 @@ void SymbolicH1BDDs::init() {
         pre_true_cube *= manager->bddVar(i);
     }
     
-    // create fact_map
-    fact_map = std::map<std::pair<int, int>, int>();
-    int fact_num = 0;
-    for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
-        for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
-            fact_map[make_pair(i, j)] = fact_num;
-            fact_num++;
-        }
-    }
-    
     // create BDDs for each operator
     create_operators_bdd();
 
@@ -83,17 +79,17 @@ int SymbolicH1BDDs::calculate_heuristic(State state) {
 
     int count = 0;
     while (true) {
+        // check if goal is reachable
+        if (goal <= current_state) {
+            return count;
+        }
+        
         count++;
         // create state copy BDD
         create_state_copy_bdd();
 
         // get effects and append to current state
         current_state += operators.AndAbstract(state_copy, pre_true_cube).SwapVariables(fact_bdd_vars[max_preconditions], fact_bdd_vars[0]);
-        
-        // check if goal is reachable
-        if (goal <= current_state) {
-            return count;
-        }
 
         // check if current state is equal to previous state
         if (current_state == previous_state) {
@@ -103,7 +99,6 @@ int SymbolicH1BDDs::calculate_heuristic(State state) {
         // set previous state to current state
         previous_state = current_state;
     }
-
 
 }
 
@@ -189,6 +184,7 @@ void SymbolicH1BDDs::create_state_copy_bdd() {
 
 void SymbolicH1BDDs::create_goal_bdd() {
     goal = manager->bddZero();
+    // print all facts in goal
     for (FactProxy fact : task_proxy.get_goals()) {
         goal += fact_to_bdd(fact_map[make_pair(fact.get_variable().get_id(), fact.get_value())], 0);
     }
@@ -224,7 +220,7 @@ void SymbolicH1BDDs::create_operators_bdd() {
         operators += preconditionBDD * effectBDD;
     }
 
-    to_dot("operators.dot", operators);
+    // to_dot("operators.dot", operators);
 
 }
 

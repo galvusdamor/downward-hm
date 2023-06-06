@@ -64,9 +64,9 @@ def plot_comparison(data_dict):
 
 # Define the files to load with their plot names
 data_dict = {
-    'Classical': 'quick_test_og.csv',
+    'Classical': 'quick_test_class.csv',
     'Symbolic': 'quick_test_symb.csv',
-    'Symbolic (set ordering)': 'quick_test_symb_set_ordering.csv',
+    # 'Symbolic (set ordering)': 'quick_test_symb_set_ordering.csv',
 }
 
 save = len(sys.argv) > 1 and sys.argv[1] == 'save'
