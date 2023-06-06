@@ -41,6 +41,7 @@ int HMHeuristic::compute_heuristic(const State &ancestor_state) {
 
         init_hm_table(s_tup);
         update_hm_table();
+
         // // print hm_table
         // std::map<std::pair<int, int>, int> fact_map = std::map<std::pair<int, int>, int>();
         // int fact_num = 0;
@@ -55,7 +56,7 @@ int HMHeuristic::compute_heuristic(const State &ancestor_state) {
         // for (auto &hm_ent : hm_table) {
         //     const Tuple &tuple = hm_ent.first;
         //     int h_val = hm_ent.second;
-        //     if (h_val != 1 && h_val != 0) {
+        //     if (h_val > 2) {
         //         continue;
         //     }
         //     cout << "tuple: ";

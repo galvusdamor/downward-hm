@@ -38,8 +38,8 @@ vector<vector<int>> generate_permutations(vector<int> nums) {
     vector<int> nums_copy = nums;
     nums_copy.erase(nums_copy.begin());
     vector<vector<int>> permutations = generate_permutations(nums_copy);
-    for (int j = 0; j < permutations.size(); j++) {
-        for (int k = 0; k < permutations[j].size(); k++) {
+    for (size_t j = 0; j < permutations.size(); j++) {
+        for (size_t k = 0; k < permutations[j].size(); k++) {
             vector<int> permutation_copy = permutations[j];
             permutation_copy.insert(permutation_copy.begin() + k, nums[0]);
             result.push_back(permutation_copy);
@@ -53,12 +53,12 @@ vector<vector<int>> generate_permutations(vector<int> nums) {
 
 
 void generate_sets_util(vector<int>& nums, int m, vector<int>& current_set, vector<vector<int>>& result, int start_index) {
-    if (current_set.size() == m) {
+    if ((int) current_set.size() == m) {
         result.push_back(current_set);
         return;
     }
 
-    for (int i = start_index; i < nums.size(); i++) {
+    for (size_t i = start_index; i < nums.size(); i++) {
         current_set.push_back(nums[i]);
         generate_sets_util(nums, m, current_set, result, i+1);
         current_set.pop_back();
@@ -67,12 +67,12 @@ void generate_sets_util(vector<int>& nums, int m, vector<int>& current_set, vect
 
 vector<vector<int>> generate_sets(vector<int>& nums, int m) {
     vector<vector<int>> result;
-    if (m >= nums.size()) {
+    if (m >= (int) nums.size()) {
         // return single answer
         result.push_back(nums);
-        if (m > nums.size()) {
+        if (m > (int) nums.size()) {
             // add padding
-            for (int i = 0; i < m - nums.size(); i++) {
+            for (size_t i = 0; i < m - nums.size(); i++) {
                 result[0].push_back(nums[0]);
             }
         }
@@ -83,9 +83,9 @@ vector<vector<int>> generate_sets(vector<int>& nums, int m) {
 
 
     vector<vector<int>> permutations_result;
-    for (int i = 0; i < result.size(); i++) {
+    for (size_t i = 0; i < result.size(); i++) {
         vector<vector<int>> permutations = generate_permutations(result[i]);
-        for (int j = 0; j < permutations.size(); j++) {
+        for (size_t j = 0; j < permutations.size(); j++) {
             permutations_result.push_back(permutations[j]);
         }
     }
@@ -93,12 +93,12 @@ vector<vector<int>> generate_sets(vector<int>& nums, int m) {
 }
 
 void generate_sets_without_permutations_util(vector<int>& nums, int m, vector<int>& current_set, vector<vector<int>>& result, int start_index) {
-    if (current_set.size() == m) {
+    if ((int) current_set.size() == m) {
         result.push_back(current_set);
         return;
     }
 
-    for (int i = start_index; i < nums.size(); i++) {
+    for (size_t i = start_index; i < nums.size(); i++) {
         current_set.push_back(nums[i]);
         generate_sets_without_permutations_util(nums, m, current_set, result, i + 1);
         current_set.pop_back();
@@ -107,13 +107,13 @@ void generate_sets_without_permutations_util(vector<int>& nums, int m, vector<in
 }
 
 vector<vector<int>> generate_sets_without_permutations(vector<int>& nums, int m) {
-    if (m >= nums.size()) {
+    if (m >= (int) nums.size()) {
         // return single answer
         vector<vector<int>> result;
         result.push_back(nums);
-        if (m > nums.size()) {
+        if (m > (int) nums.size()) {
             // add padding
-            for (int i = 0; i < m - nums.size(); i++) {
+            for (size_t i = 0; i < m - nums.size(); i++) {
                 result[0].push_back(nums[0]);
             }
         }
@@ -148,7 +148,6 @@ void SymbolicH2BDDs::init() {
     int fact_num = 0;
     for (size_t i = 0; i < task_proxy.get_variables().size(); ++i) {
         num_facts += task_proxy.get_variables()[i].get_domain_size();
-        int first_fact = fact_num;
         for (int j = 0; j < task_proxy.get_variables()[i].get_domain_size(); ++j) {
             fact_map[make_pair(i, j)] = fact_num;
             fact_num++;
@@ -320,7 +319,7 @@ BDD SymbolicH2BDDs::fact_to_bdd(int fact, int fact_place, int copy) {
 */
 BDD SymbolicH2BDDs::set_to_bdd(std::vector<int> facts, int copy) {
     BDD bdd = manager->bddOne();
-    for (int i = 0; i < facts.size(); ++i) {
+    for (size_t i = 0; i < facts.size(); ++i) {
         bdd *= fact_to_bdd(facts[i], i, copy);
     }
     return bdd;
@@ -354,10 +353,10 @@ void SymbolicH2BDDs::create_current_state_bdd(State state) {
 
 BDD SymbolicH2BDDs::createBiimplicationBDD(std::vector<std::vector<BDD>> vars) {
     BDD bdd = manager->bddOne();
-    for (int i = 0; i < vars[0].size(); ++i) {
+    for (size_t i = 0; i < vars[0].size(); ++i) {
         // biimp all with eachother
         BDD xnor = manager->bddOne();
-        for (int j = 0; j < vars.size() - 1; ++j) {
+        for (size_t j = 0; j < vars.size() - 1; ++j) {
             xnor *= vars[j][i].Xnor(vars[j+1][i]);
         }
         bdd *= xnor;
