@@ -44,7 +44,7 @@ class SymbolicH2HeuristicFeature : public plugins::TypedFeature<Evaluator, Symbo
 public:
     SymbolicH2HeuristicFeature() : TypedFeature("symb_h2") {
         document_title("symbolic h^2 heuristic");
-        add_option<int>("var_order", "subset size", "1", plugins::Bounds("1", "2"));
+        add_option<int>("var_order", "subset size", "1", plugins::Bounds("1", "7"));
         Heuristic::add_options_to_feature(*this);
 
         document_language_support("action costs", "supported");

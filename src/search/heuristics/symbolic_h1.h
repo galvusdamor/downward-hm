@@ -18,6 +18,7 @@ class Options;
 namespace symbolic_h1 {
 
 class SymbolicH1Heuristic : public Heuristic {
+    int var_order;
     std::shared_ptr<symbolic_1::SymbolicH1BDDs> bdds; // The symbolic BDDs are declared
 
 protected:

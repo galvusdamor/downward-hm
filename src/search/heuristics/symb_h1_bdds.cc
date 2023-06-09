@@ -14,10 +14,12 @@ void exceptionError(string /*message*/) {
     throw BDDError();
 }
 
-SymbolicH1BDDs::SymbolicH1BDDs(const TaskProxy &task)
+SymbolicH1BDDs::SymbolicH1BDDs(const TaskProxy &task, int var_order1)
     : task_proxy(task),
       cudd_init_nodes(16000000L), cudd_init_cache_size(16000000L),
-      cudd_init_available_memory(0L) {}
+      cudd_init_available_memory(0L) {
+        var_order = var_order1;
+      }
 
 void SymbolicH1BDDs::init() {
     // get the number of facts
@@ -45,7 +47,7 @@ void SymbolicH1BDDs::init() {
     }
 
     // create cudd manager with variable size (max_preconditions+1) * ceil(log2(facts))
-    manager = new Cudd(num_facts * (max_preconditions + 1) * num_fact_bits, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
+    manager = new Cudd((max_preconditions + 1) * num_fact_bits, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
 
     // populate fact_bdd_vars
     for (int i = 0; i < max_preconditions + 1; ++i) {
@@ -59,9 +61,11 @@ void SymbolicH1BDDs::init() {
     create_goal_bdd();
 
     // create pre_true_cube
-    pre_true_cube = manager->bddVar(max_preconditions * num_fact_bits - 1);
-    for (int i = 0; i < max_preconditions * num_fact_bits - 1; ++i) {
-        pre_true_cube *= manager->bddVar(i);
+    pre_true_cube = manager->bddVar(get_var_num(0, 0));
+    for (int i = 0; i < max_preconditions; ++i) {
+        for (int j = 0; j < num_fact_bits; ++j) {
+            pre_true_cube *= manager->bddVar(get_var_num(j, i));
+        }
     }
     
     // create BDDs for each operator
@@ -147,7 +151,11 @@ BDD SymbolicH1BDDs::fact_to_bdd(int fact, int copy) {
 }
 
 int SymbolicH1BDDs::get_var_num(int bit, int copy) {
-    return bit + (copy * num_fact_bits);
+    if (var_order == 1) {
+        return bit + (copy * num_fact_bits);
+    } else {
+        return copy + (bit * (max_preconditions + 1));
+    }
 }
 
 /**
