@@ -1,0 +1,16 @@
+Timestamp,File,Search Time,Total Time,Peak Memory,Elapsed Time
+2023-06-07 14:13:42,classical-domains/classical-sas/blocks-probBLOCKS-4-0.sas,0.0031129,0.0490194,26616.0,0.17673039436340332
+2023-06-07 14:13:42,classical-domains/classical-sas/blocks-probBLOCKS-4-1.sas,0.0039071,0.0554266,26616.0,0.2082500457763672
+2023-06-07 14:13:42,classical-domains/classical-sas/blocks-probBLOCKS-4-2.sas,0.0026016,0.0509447,26616.0,0.20115113258361816
+2023-06-07 14:13:42,classical-domains/classical-sas/blocks-probBLOCKS-5-0.sas,0.0077408,0.0612074,26720.0,0.2369072437286377
+2023-06-07 14:13:43,classical-domains/classical-sas/blocks-probBLOCKS-5-1.sas,0.0114435,0.0559944,26720.0,0.1961350440979004
+2023-06-07 14:13:43,classical-domains/classical-sas/blocks-probBLOCKS-5-2.sas,0.0117383,0.0599766,26720.0,0.1977066993713379
+2023-06-07 14:13:43,classical-domains/classical-sas/blocks-probBLOCKS-6-0.sas,0.0315484,0.077476,26864.0,0.20869207382202148
+2023-06-07 14:13:43,classical-domains/classical-sas/blocks-probBLOCKS-6-1.sas,0.0461744,0.0942224,26968.0,0.2427670955657959
+2023-06-07 14:13:44,classical-domains/classical-sas/blocks-probBLOCKS-6-2.sas,0.077936,0.1211,26984.0,0.2649350166320801
+2023-06-07 14:13:44,classical-domains/classical-sas/blocks-probBLOCKS-7-0.sas,0.544981,0.590048,28612.0,0.7379634380340576
+2023-06-07 14:13:45,classical-domains/classical-sas/blocks-probBLOCKS-7-1.sas,0.653422,0.703664,29784.0,0.8514091968536377
+2023-06-07 14:13:46,classical-domains/classical-sas/blocks-probBLOCKS-7-2.sas,0.592896,0.639228,29784.0,0.7921662330627441
+2023-06-07 14:13:51,classical-domains/classical-sas/blocks-probBLOCKS-8-0.sas,5.34087,5.39396,52516.0,5.574610471725464
+2023-06-07 14:13:57,classical-domains/classical-sas/blocks-probBLOCKS-8-1.sas,5.77502,5.82012,54132.0,5.982654094696045
+2023-06-07 14:14:03,classical-domains/classical-sas/blocks-probBLOCKS-8-2.sas,4.83003,4.87845,51668.0,5.045623302459717

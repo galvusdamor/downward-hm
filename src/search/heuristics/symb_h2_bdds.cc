@@ -133,11 +133,12 @@ void exceptionError(string /*message*/) {
     throw BDDError();
 }
 
-SymbolicH2BDDs::SymbolicH2BDDs(const TaskProxy &task)
+SymbolicH2BDDs::SymbolicH2BDDs(const TaskProxy &task, int var_order1)
     : task_proxy(task),
       cudd_init_nodes(16000000L), cudd_init_cache_size(16000000L),
       cudd_init_available_memory(0L) 
       {
+        var_order = var_order1;
         // cout << task.get_operators()[0].get_cost() << endl << endl << endl << endl;
 }
 
@@ -313,8 +314,16 @@ BDD SymbolicH2BDDs::set_to_bdd(std::vector<int> facts, int copy) {
 }
 
 int SymbolicH2BDDs::get_var_num(int bit, int fact, int set) {
-    return bit + (fact * num_fact_bits) + (set * num_set_bits);
-    // return set + (bit * (num_precondition_sets + num_implicit_precondition_sets + 1)) + (fact * (num_precondition_sets + num_implicit_precondition_sets + 1) * num_fact_bits);
+    if (var_order == 1) {
+        return bit + (fact * num_fact_bits) + (set * num_set_bits);
+    } else {
+        return fact + (bit * m) + (set * num_set_bits);
+    }
+    // 2
+    // return fact + (bit * m) + (set * num_set_bits);
+    // 3
+    // 5
+    // return set + (fact * (num_precondition_sets + num_implicit_precondition_sets + 1)) + (fact * (num_precondition_sets + num_implicit_precondition_sets + 1) * m);
 }
 
 /**

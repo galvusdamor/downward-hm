@@ -24,6 +24,7 @@ class SymbolicH2BDDs {
     // Use task_proxy to access task information.
     TaskProxy task_proxy;
     int m = 2;
+    int var_order;
 
     const long cudd_init_nodes;          // Number of initial nodes
     const long cudd_init_cache_size;     // Initial cache size
@@ -63,7 +64,7 @@ class SymbolicH2BDDs {
 
 public:
     SymbolicH2BDDs(const TaskProxy &task);
-    SymbolicH2BDDs(const TaskProxy &task, int m);
+    SymbolicH2BDDs(const TaskProxy &task, int var_order);
 
     void init();
 

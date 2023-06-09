@@ -9,10 +9,10 @@ import time
 timeout = 30  # Timeout in seconds
 file_path = "classical-domains/classical-sas/blocks-probBLOCKS*.sas"
 # file_path = "classical-domains/classical-sas/blocks-probBLOCKS-6-0.sas"
-search_heuristic = "hm(2)"
-# search_heuristic = "symb_h2()"
-csv_file_name = "quick_test_class.csv"
-num_runs = 5  # Number of test runs
+# search_heuristic = "hm(2)"
+search_heuristic = "symb_h2()"
+csv_file_name = "quick_test_symb4.csv"
+num_runs = 1  # Number of test runs
 
 def run_command_for_files():
     # build
