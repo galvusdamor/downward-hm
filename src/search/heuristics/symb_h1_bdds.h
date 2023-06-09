@@ -21,6 +21,7 @@ extern void exceptionError(std::string message);
 class SymbolicH1BDDs {
     // Use task_proxy to access task information.
     TaskProxy task_proxy;
+    int var_order;
 
     const long cudd_init_nodes;          // Number of initial nodes
     const long cudd_init_cache_size;     // Initial cache size
@@ -43,7 +44,7 @@ class SymbolicH1BDDs {
     std::map<std::pair<int, int>, int> fact_map; // map from var and if to fact number
 
 public:
-    SymbolicH1BDDs(const TaskProxy &task);
+    SymbolicH1BDDs(const TaskProxy &task, int var_order);
 
     void init();
 

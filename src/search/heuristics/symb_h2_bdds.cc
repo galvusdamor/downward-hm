@@ -209,9 +209,13 @@ void SymbolicH2BDDs::init() {
     create_goal_bdd();
 
     // create pre_true_cube
-    pre_true_cube = manager->bddVar((num_precondition_sets + num_implicit_precondition_sets) * num_set_bits - 1);
-    for (int i = 0; i < (num_precondition_sets + num_implicit_precondition_sets) * num_set_bits - 1; ++i) {
-        pre_true_cube *= manager->bddVar(i);
+    pre_true_cube = manager->bddVar(get_var_num(0, 0, 0));
+    for (int i = 0; i < num_fact_bits; ++i) {
+        for (int j = 0; j < m; ++j) {
+            for (int k = 0; k < num_precondition_sets + num_implicit_precondition_sets; ++k) {
+                pre_true_cube *= manager->bddVar(get_var_num(i, j, k));
+            }
+        }
     }
     
     // create BDDs for each operator
@@ -232,7 +236,7 @@ int SymbolicH2BDDs::calculate_heuristic(State state) {
         if (goal <= current_state) {
             return count;
         }
-        
+
         count++;
         // create state copy BDD
         create_state_copy_bdd();
@@ -314,16 +318,23 @@ BDD SymbolicH2BDDs::set_to_bdd(std::vector<int> facts, int copy) {
 }
 
 int SymbolicH2BDDs::get_var_num(int bit, int fact, int set) {
-    if (var_order == 1) {
-        return bit + (fact * num_fact_bits) + (set * num_set_bits);
-    } else {
-        return fact + (bit * m) + (set * num_set_bits);
+    switch (var_order) 
+    {
+        case 1:
+            return bit + (fact * num_fact_bits) + (set * num_set_bits);
+        case 2:
+            return fact + (bit * m) + (set * num_set_bits);
+        case 3:
+            return bit + (set * num_set_bits) + (fact * num_set_bits * (num_precondition_sets + num_implicit_precondition_sets + 1));
+        case 4:
+            return fact + (set * m) + (bit * m * (num_precondition_sets + num_implicit_precondition_sets + 1));
+        case 5:
+            return set + (bit * (num_precondition_sets + num_implicit_precondition_sets + 1)) + (fact * (num_precondition_sets + num_implicit_precondition_sets + 1) * num_fact_bits);
+        case 6:
+            return set + (fact * (num_precondition_sets + num_implicit_precondition_sets + 1)) + (bit * (num_precondition_sets + num_implicit_precondition_sets + 1) * m);
+        default:
+            return bit + (fact * num_fact_bits) + (set * num_set_bits);
     }
-    // 2
-    // return fact + (bit * m) + (set * num_set_bits);
-    // 3
-    // 5
-    // return set + (fact * (num_precondition_sets + num_implicit_precondition_sets + 1)) + (fact * (num_precondition_sets + num_implicit_precondition_sets + 1) * m);
 }
 
 /**
@@ -467,6 +478,7 @@ void SymbolicH2BDDs::create_operators_bdd() {
         operators += preconditionBDD * (effectBDD + implicit_preconditionBDD_1 + implicit_preconditionBDD_2);
 
     }
+    to_dot("operators" + std::to_string(var_order) + ".dot", operators);
 }
 
 }
