@@ -7,6 +7,10 @@ h1 TEST
 ./build.py && ./fast-downward.py classical-domains/classical/zenotravel/pfile2.pddl --search "astar(hm(2,transform=adapt_costs(one)))"
 ./build.py && ./fast-downward.py classical-domains/classical/zenotravel/pfile2.pddl --search "astar(symb_h2(transform=adapt_costs(one)))"
 
+VAR ORDER TEST
+./build.py && ./fast-downward.py classical-domains/classical/blocks/probBLOCKS-4-0.pddl --search "astar(symb_h2(1))"
+./build.py && ./fast-downward.py classical-domains/classical/blocks/probBLOCKS-4-0.pddl --search "astar(symb_h2(2))"
+
 
 ./build.py && ./fast-downward.py classical-domains/classical-sas/blocks-probBLOCKS-4-0.sas --search "astar(symb_h2())"
 

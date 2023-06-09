@@ -14,9 +14,9 @@ using namespace std;
 
 namespace symbolic_h2 {
 SymbolicH2Heuristic::SymbolicH2Heuristic(const plugins::Options &opts)
-    : Heuristic(opts) {
+    : Heuristic(opts), var_order(opts.get<int>("var_order")) {
 
-    bdds = make_shared<symbolic_2::SymbolicH2BDDs>(task_proxy);
+    bdds = make_shared<symbolic_2::SymbolicH2BDDs>(task_proxy, var_order);
 
     bdds->init();
 
@@ -44,7 +44,7 @@ class SymbolicH2HeuristicFeature : public plugins::TypedFeature<Evaluator, Symbo
 public:
     SymbolicH2HeuristicFeature() : TypedFeature("symb_h2") {
         document_title("symbolic h^2 heuristic");
-        add_option<int>("m", "subset size", "1", plugins::Bounds("1", "infinity"));
+        add_option<int>("var_order", "subset size", "1", plugins::Bounds("1", "2"));
         Heuristic::add_options_to_feature(*this);
 
         document_language_support("action costs", "supported");
